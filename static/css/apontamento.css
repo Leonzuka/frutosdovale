@@ -1,0 +1,577 @@
+/* Correção do layout dos cards de ação */
+.action-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem auto;
+    max-width: 1200px;
+    padding: 0 1rem;
+}
+
+.action-card {
+    background: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.action-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+}
+
+.card-content {
+    flex: 1;
+    margin-bottom: 1rem;
+}
+
+.card-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Correção dos botões dos cards */
+.card-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-color);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    width: fit-content;
+    position: relative;
+}
+
+.card-button:hover {
+    color: #60a5fa;
+}
+
+.card-button i {
+    transition: transform 0.3s ease;
+}
+
+.card-button:hover i {
+    transform: translateX(4px);
+}
+
+/* Correção dos estilos dos modais */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: var(--primary-color);
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 95%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.lista-atividades {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.atividade-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+/* Estilos para os cards de download */
+.download-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.download-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(30, 41, 59, 0.7);
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+}
+
+#downloadCard .card-button {
+    color: var(--accent-color);
+}
+
+#downloadCard:hover {
+    border-color: var(--accent-color);
+}
+
+.download-card:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: var(--accent-color);
+}
+
+.download-icon {
+    width: 3rem;
+    height: 3rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+}
+
+.download-info h4 {
+    color: var(--text-primary); 
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+}
+
+.download-info p {
+    color: var(--text-secondary); 
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.apontamento-form {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.apontamento-form form {
+    background: var(--primary-color);
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.form-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: rgba(30, 41, 59, 0.7);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.form-group input[readonly] {
+    background: rgba(30, 41, 59, 0.9);
+    cursor: not-allowed;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-primary,
+.btn-secondary {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+.back-button-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+}
+
+/* botão de voltar*/
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: #1a2234;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    border: 1px solid #2d3748;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.back-button:hover {
+    background: #242d3f;
+    border-color: #3b82f6;
+    transform: translateX(-5px);
+}
+
+.back-button i {
+    font-size: 1rem;
+}
+
+.back-button:hover i {
+    transform: translateX(-3px);
+}
+
+/* Melhorar o espaçamento do header */
+.main-header {
+    background: rgba(30, 41, 59, 0.5);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0;
+    backdrop-filter: blur(10px);
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+.ultimos-registros {
+    margin-top: 2rem;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.ultimos-registros h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.registros-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.registro-item:hover {
+    background: rgba(30, 41, 59, 0.9);
+    transform: translateX(5px);
+}
+
+.registro-valor {
+    font-family: 'Consolas', monospace;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: right;
+}
+
+.registro-valor.positivo {
+    color: #0fa06b;
+}
+
+.registro-valor.negativo {
+    color: #cf2222;
+}
+
+.registro-header {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr 1fr 0.6fr 0.6fr 0.6fr 0.6fr 0.4fr;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    background: rgba(30, 41, 59, 0.9);
+    z-index: 10;
+}
+
+.registro-item {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr 1fr 0.6fr 0.6fr 0.6fr 0.6fr 0.4fr;
+    gap: 1rem;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.delete-button {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+    /* Centralizando o botão na sua coluna */
+    justify-self: center;
+}
+
+.delete-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    transform: scale(1.1);
+}
+
+/* Adicionar paginação */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+
+.pagination-button {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-button:hover:not(:disabled) {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: var(--accent-color);
+}
+
+.pagination-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Adicionar estas regras ao final do arquivo apontamento.css */
+
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group select,
+[data-theme="light"] .form-group textarea {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #000000;
+}
+
+[data-theme="light"] .modal-content {
+    background: #ffffff;
+}
+
+[data-theme="light"] .apontamento-form {
+    background: #ffffff;
+}
+
+[data-theme="light"] .registro-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .registro-item:hover {
+    background: #f8fafc;
+    border-color: var(--accent-color);
+}
+
+[data-theme="light"] .registro-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .ultimos-registros {
+    background: #ffffff;
+}
+
+[data-theme="light"] .atividade-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .atividade-item:hover {
+    background: #f8fafc;
+    border-color: var(--accent-color);
+}
+
+[data-theme="light"] .download-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .download-info h4 {
+    color: #1e293b;
+}
+
+[data-theme="light"] .download-info p {
+    color: #64748b;
+}
+
+[data-theme="light"] .download-card:hover {
+    background: #f8fafc;
+    border-color: var(--accent-color);
+}
+
+[data-theme="light"] .pagination-button {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+[data-theme="light"] .pagination-button:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: var(--accent-color);
+}
+
+[data-theme="light"] .search-input {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #000000;
+}
