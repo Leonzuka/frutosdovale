@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apontamento - N7</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/apontamento.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="main-header">
+        <div class="back-button-container">
+            <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para o Início
+            </a>
+        </div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Sistema Frutos Do vale</h1>
+                <p class="subtitle">Apontamento de Atividades</p>
+            </div>
+            <div class="header-right">
+                <div class="date-display">
+                    <i class="far fa-calendar"></i>
+                    <span id="current-date"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="action-cards">
+            <!-- Card de Registro -->
+            <div class="action-card" id="registroCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h2>Registrar Apontamento</h2>
+                </div>
+                <div class="card-content">
+                    <p>Registrar atividades realizadas</p>
+                </div>
+                <button class="card-button" onclick="showForm()">
+                    Registrar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+    
+            <!-- Card de Adicionar Atividade -->
+            <div class="action-card" id="addAtividadeCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h2>Adicionar Atividade</h2>
+                </div>
+                <div class="card-content">
+                    <p>Cadastrar nova atividade</p>
+                </div>
+                <button class="card-button" onclick="showModal('addAtividadeModal')">
+                    Adicionar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+    
+            <!-- Card de Desativar Atividade -->
+            <div class="action-card" id="desativarAtividadeCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-minus"></i>
+                    </div>
+                    <h2>Desativar Atividade</h2>
+                </div>
+                <div class="card-content">
+                    <p>Desativar atividades existentes</p>
+                </div>
+                <button class="card-button" onclick="showModal('desativarAtividadeModal')">
+                    Desativar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+    
+            <!-- Card de Download -->
+            <div class="action-card" id="downloadCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h2>Download Planilhas</h2>
+                </div>
+                <div class="card-content">
+                    <p>Baixar relatórios de apontamentos</p>
+                </div>
+                <button class="card-button" onclick="showModal('downloadModal')">
+                    Download
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Card de Registro em Lote -->
+            <div class="action-card" id="registroLoteCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <h2>Registro em Lote</h2>
+                </div>
+                <div class="card-content">
+                    <p>Registrar férias, folgas e atestados</p>
+                </div>
+                <button class="card-button" onclick="showModal('registroLoteModal')">
+                    Registrar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="apontamento-form" id="apontamentoForm" style="display: none;">
+            <form id="registroApontamentoForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="funcionario">Funcionário:</label>
+                        <select id="funcionario" name="funcionario_id" required>
+                            <option value="">Selecione o funcionário</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="data">Data:</label>
+                        <input type="date" id="data" name="data" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipoApontamento">Tipo:</label>
+                        <select id="tipoApontamento" name="tipo_apontamento">
+                            <option value="Meta">Meta</option>
+                            <option value="Hora">Hora</option>
+                            <option value="Compensado">Compensado (Hora)</option>
+                        </select>
+                    </div>
+                </div>
+    
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="atividade">Atividade:</label>
+                        <select id="atividade" name="atividade_id" required>
+                            <option value="">Selecione a atividade</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="valvula">Válvula:</label>
+                        <select id="valvula" name="valvula">
+                            <option value="">Selecione a válvula</option>
+                        </select>
+                    </div>
+                </div>
+    
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="meta">Meta:</label>
+                        <input type="number" id="meta" name="meta" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="realizado">Realizado:</label>
+                        <input type="number" id="realizado" name="realizado" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group" id="valorUnitGroup">
+                        <label for="valorUnit">Valor Unitário:</label>
+                        <input type="number" id="valorUnit" name="valor_unit" step="0.01" required>
+                    </div>
+                </div>
+    
+                <div class="form-row">
+                    <div class="form-group" id="extraGroup">
+                        <label for="extra">Extra Calculado:</label>
+                        <input type="decimal" id="extra" name="extra">
+                    </div>
+                    <div class="form-group">
+                        <label for="horas">Horas:</label>
+                        <input type="number" id="horas" name="hora" step="0.01">
+                    </div>
+                </div>
+    
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="observacao">Observação:</label>
+                        <textarea id="observacao" name="observacao" rows="3"></textarea>
+                    </div>
+                </div>
+    
+                <div class="form-buttons">
+                    <button type="submit" class="btn-primary">Registrar</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('apontamentoForm').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="ultimos-registros">
+            <h3>Últimos Apontamentos</h3>
+            <div class="registro-header">
+                <div>Data</div>
+                <div>Funcionário</div>
+                <div>Atividade</div>
+                <div>Meta</div>
+                <div>Realizado</div>
+                <div>Hora</div>
+                <div>Extra</div>
+                <div></div>
+            </div>
+            <div class="registros-container" id="registros-list">
+                <!-- Registros serão inseridos aqui via JavaScript -->
+            </div>
+            <div class="pagination-container">
+                <button class="pagination-button" id="prev-page">
+                    <i class="fas fa-chevron-left"></i>
+                    Anterior
+                </button>
+                <span class="pagination-info">
+                    Página <span id="current-page">1</span> de <span id="total-pages">1</span>
+                </span>
+                <button class="pagination-button" id="next-page">
+                    Próxima
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        </div>
+
+        <!-- Modal de Registro em Lote -->
+        <div id="registroLoteModal" class="modal">
+            <div class="modal-content">
+                <h3>Registro em Lote</h3>
+                <form id="registroLoteForm">
+                    <div class="form-group">
+                        <label for="funcionarioLote">Funcionário:</label>
+                        <select id="funcionarioLote" name="funcionario_id" required>
+                            <option value="">Selecione o funcionário</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="atividadeLote">Tipo:</label>
+                        <select id="atividadeLote" name="atividade_id" required>
+                            <option value="">Selecione o tipo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataInicial">Data Inicial:</label>
+                        <input type="date" id="dataInicial" name="data_inicial" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataFinal">Data Final:</label>
+                        <input type="date" id="dataFinal" name="data_final" required>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Registrar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('registroLoteModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+        <!-- Modal de Adicionar Atividade -->
+    <div id="addAtividadeModal" class="modal">
+        <div class="modal-content">
+            <h3>Adicionar Nova Atividade</h3>
+            <form id="addAtividadeForm">
+                <div class="form-group">
+                    <label for="nomeAtividade">Nome da Atividade:</label>
+                    <input type="text" id="nomeAtividade" name="atividade" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="valorUnit">Valor Unitário:</label>
+                    <input type="number" id="valorUnit" name="valor_unit" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meta">Meta:</label>
+                    <input type="number" id="meta" name="meta" step="0.01">
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn-primary">Adicionar</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('addAtividadeModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Desativar Atividade -->
+    <div id="desativarAtividadeModal" class="modal">
+        <div class="modal-content">
+            <h3>Desativar Atividade</h3>
+            <div class="form-group search-group">
+                <input type="text" id="searchAtividade" placeholder="Pesquisar atividade..." class="search-input">
+            </div>
+            <div id="listaAtividades" class="lista-atividades">
+                <!-- Lista será preenchida via JavaScript -->
+            </div>
+            <button class="close-modal" onclick="closeModal('desativarAtividadeModal')">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Download -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <h3>Download de Planilhas</h3>
+            <div class="download-options">
+                <div class="download-card" onclick="downloadPlanilha('apontamentos')">
+                    <div class="download-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="download-info">
+                        <h4>Apontamentos</h4>
+                        <p>Todos os apontamentos registrados</p>
+                    </div>
+                </div>
+
+                <div class="download-card" onclick="downloadPlanilha('atividades')">
+                    <div class="download-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="download-info">
+                        <h4>Atividades</h4>
+                        <p>Lista de atividades cadastradas</p>
+                    </div>
+                </div>
+
+                <div class="download-card" onclick="showResumoModal()">
+                    <div class="download-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="download-info">
+                        <h4>Resumo Geral</h4>
+                        <p>Resumo consolidado dos apontamentos</p>
+                    </div>
+                </div>
+            </div>
+            <button class="close-modal" onclick="closeModal('downloadModal')">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+        </div>
+    </div>
+    <!-- Modal para Período -->
+    <div id="resumoModal" class="modal">
+        <div class="modal-content">
+            <h3>Selecione o Período</h3>
+            <form id="resumoForm">
+                <div class="form-group">
+                    <label for="dataInicial">Data Inicial:</label>
+                    <input type="date" id="dataInicial" name="dataInicial">
+                </div>
+                <div class="form-group">
+                    <label for="dataFinal">Data Final:</label>
+                    <input type="date" id="dataFinal" name="dataFinal">
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="btn-primary">Gerar Relatório</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('resumoModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>Sistema Frutos Do vale&copy; <span id="current-year"></span></p>
+            <div class="footer-links">
+                <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                <a href="#">Documentação</a>
+            </div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/apontamento.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

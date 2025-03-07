@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frutos Do Vale - Relatório Consolidado</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header Section -->
+        <header class="main-header">
+            <div class="back-button-container">
+                <a href="{{ url_for('select_farm') }}" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar para Seleção de Fazendas
+                </a>
+            </div>
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo-container">
+                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo FrutosDoVale" class="logo">
+                    </div>
+                </div>
+                <div class="header-center">
+                    <h1>Relatório Consolidado - Todas as Fazendas</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-display">
+                        <i class="far fa-calendar"></i>
+                        <span id="current-date"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div style="text-align: center; padding: 5rem 1rem;">
+                <i class="fas fa-cogs" style="font-size: 4rem; color: var(--accent-color); margin-bottom: 2rem;"></i>
+                <h2>Relatório Consolidado em Desenvolvimento</h2>
+                <p style="max-width: 600px; margin: 1rem auto;">
+                    Esta funcionalidade está em desenvolvimento e estará disponível em breve.
+                    O relatório consolidado permitirá visualizar dados de todas as fazendas em um único local.
+                </p>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>Sistema Frutos Do Vale &copy; <span id="current-year"></span></p>
+                <div class="footer-links">
+                    <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                    <a href="#">Documentação</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Atualiza a data e ano
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateDisplay = document.getElementById('current-date');
+            const yearDisplay = document.getElementById('current-year');
+            
+            const currentDate = new Date();
+            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+            yearDisplay.textContent = currentDate.getFullYear();
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

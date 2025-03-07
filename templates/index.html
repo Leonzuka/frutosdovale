@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frutos Do Vale N7 - Sistema de Gestão</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Adiciona Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header Section -->
+        <header class="main-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo-container">
+                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo FrutosDoVale" class="logo">
+                    </div>
+                    <a href="{{ url_for('select_farm') }}" class="select-farm-button">
+                        <i class="fas fa-farm"></i>
+                        Escolher outra Fazenda
+                    </a>
+                </div>
+                <div class="header-center">
+                    <h1>Sistema De Gestão - {{ farm_name }}</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-display">
+                        <i class="far fa-calendar"></i>
+                        <span id="current-date"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="menu-cards">
+                <!-- Gestão de Tratores Card -->
+                <a href="{{ url_for('tractors') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-tractor"></i>
+                        </div>
+                        <h2>Gestão de Tratores</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Controle de abastecimento e manutenção da sua frota</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Relatórios Card -->
+                <a href="{{ url_for('relatorios') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h2>Relatórios</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Análise completa das operações</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <!-- Funcionários Card -->
+                <a href="{{ url_for('funcionarios') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h2>Funcionários</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Gestão de funcionários e dados cadastrais</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Apontamento Card -->
+                <a href="{{ url_for('apontamento') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h2>Apontamento</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Registro de atividades e produtividade</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Estoque Card -->
+                <a href="{{ url_for('estoque') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <h2>Estoque</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Controle de estoque e inventário</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Aplicação Card -->
+                <a href="{{ url_for('aplicacoes') }}" class="menu-card active">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-spray-can"></i>
+                        </div>
+                        <h2>Aplicação</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Controle de pulverização e fertilizantes</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+            </div> 
+        </main>    
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>Sistema Frutos Do Vale &copy; <span id="current-year"></span></p>
+                <div class="footer-links">
+                    <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                    <a href="#">Documentação</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Atualiza a data e ano
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateDisplay = document.getElementById('current-date');
+            const yearDisplay = document.getElementById('current-year');
+            
+            const currentDate = new Date();
+            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+            yearDisplay.textContent = currentDate.getFullYear();
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

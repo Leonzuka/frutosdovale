@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque - N7</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estoque.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="back-button-container">
+            <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para o Início
+            </a>
+        </div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Sistema Frutos Do vale</h1>
+                <p class="subtitle">Gestão de Estoque</p>
+            </div>
+            <div class="header-right">
+                <div class="date-display">
+                    <i class="far fa-calendar"></i>
+                    <span id="current-date"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="action-cards">
+            <!-- Card de Registro -->
+            <div class="action-card" id="registroCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h2>Registrar Estoque</h2>
+                </div>
+                <div class="card-content">
+                    <p>Registrar entrada/saída de produtos</p>
+                </div>
+                <button class="card-button" onclick="showModal('registroModal')">
+                    Registrar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Card de Adicionar Produto -->
+            <div class="action-card" id="addProdutoCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h2>Adicionar Produto</h2>
+                </div>
+                <div class="card-content">
+                    <p>Cadastrar novo produto</p>
+                </div>
+                <button class="card-button" onclick="showModal('addProdutoModal')">
+                    Adicionar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Card de Desativar Produto -->
+            <div class="action-card" id="removeProdutoCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-minus"></i>
+                    </div>
+                    <h2>Desativar Produtos</h2>
+                </div>
+                <div class="card-content">
+                    <p>Desativar produtos existentes</p>
+                </div>
+                <button class="card-button" onclick="showModal('removeProdutoModal')">
+                    Desativar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+                    <!-- Card de Adicionar Loja -->
+        <div class="action-card" id="addLojaCard">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <h2>Adicionar Loja</h2>
+            </div>
+            <div class="card-content">
+                <p>Cadastrar nova loja</p>
+            </div>
+            <button class="card-button" onclick="showModal('addLojaModal')">
+                Adicionar
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Card de Remover Loja -->
+        <div class="action-card" id="removeLojaCard">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-store-slash"></i>
+                </div>
+                <h2>Remover Loja</h2>
+            </div>
+            <div class="card-content">
+                <p>Excluir lojas existentes</p>
+            </div>
+            <button class="card-button" onclick="showModal('removeLojaModal')">
+                Remover
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Card de Download -->
+        <div class="action-card" id="downloadCard">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h2>Download Planilhas</h2>
+            </div>
+            <div class="card-content">
+                <p>Baixar relatórios do estoque</p>
+            </div>
+            <button class="card-button" onclick="showModal('downloadModal')">
+                Download
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Modal de Registro -->
+        <div id="registroModal" class="modal">
+            <div class="modal-content">
+                <h3>Registrar Movimentação</h3>
+                <form id="registroForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data">Data:</label>
+                            <input type="date" id="data" name="data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_movimento">Tipo de Movimento:</label>
+                            <select id="tipo_movimento" name="tipo_movimento" required>
+                                <option value="ENTRADA">Entrada</option>
+                                <option value="SAIDA">Saída</option>
+                            </select>
+                        </div>
+                    </div>
+                
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produto">Produto:</label>
+                            <select id="produto" name="produto_id" required>
+                                <option value="">Selecione um produto</option>
+                            </select>
+                            <div id="classificacaoProduto" class="classificacao-display" style="display: none;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade:</label>
+                            <input type="number" id="quantidade" name="quantidade" step="0.01" required>
+                        </div>
+                    </div>
+                
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="valor_unitario">Valor Unitário:</label>
+                            <input type="number" id="valor_unitario" name="valor_unitario" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="funcionario">Funcionário:</label>
+                            <select id="funcionario" name="funcionario_id" required>
+                                <option value="">Selecione um funcionário</option>
+                            </select>
+                        </div>
+                    </div>
+                
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loja">Loja:</label>
+                            <select id="loja" name="loja_id" required>
+                                <option value="">Selecione uma loja</option>
+                            </select>
+                        </div>
+                    </div>
+                
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Registrar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('registroModal')">Cancelar</button>
+                    </div>
+                </form>
+                <div class="ultimas-movimentacoes">
+                    <h3>Últimas Movimentações</h3>
+                    <div id="movimentacoes-list"></div>
+                    <div class="pagination">
+                        <!-- Os botões serão inseridos via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Adicionar Produto -->
+        <div id="addProdutoModal" class="modal">
+            <div class="modal-content">
+                <h3>Adicionar Novo Produto</h3>
+                <form id="addProdutoForm">
+                    <div class="form-group">
+                        <label for="nomeProduto">Nome do Produto:</label>
+                        <input type="text" id="nomeProduto" name="nome" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tipo">Tipo:</label>
+                        <select id="tipo" name="tipo" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="KG">Quilograma (KG)</option>
+                            <option value="L">Litro (L)</option>
+                            <option value="UN">Unidade(Un)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="classificacao">Classificação:</label>
+                        <select id="classificacao" name="classificacao" required>
+                            <option value="">Selecione a classificação</option>
+                            <option value="FERTILIZANTE">Fertilizante</option>
+                            <option value="DEFENSIVOS">Defensivos</option>
+                            <option value="ESPALHANTE">Espalhante</option>
+                            <option value="FOLIAR">Foliar</option>
+                            <option value="HORMONAL">Hormonal</option>
+                            <option value="PEÇAS">Peças</option>
+                            <option value="EMBALAGENS">Embalagens</option>
+                        </select>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Adicionar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('addProdutoModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Desativar Produto -->
+        <div id="removeProdutoModal" class="modal">
+            <div class="modal-content">
+                <h3>Remover Produto</h3>
+                <div class="form-group search-group">
+                    <input type="text" id="searchProduto" placeholder="Pesquisar produto..." class="search-input">
+                </div>
+                <div id="listaProdutos" class="lista-produtos" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Lista de produtos será preenchida via JavaScript -->
+                </div>
+                <button class="close-modal" onclick="closeModal('removeProdutoModal')">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+                <!-- Modal de Adicionar Loja -->
+        <div id="addLojaModal" class="modal">
+            <div class="modal-content">
+                <h3>Adicionar Nova Loja</h3>
+                <form id="addLojaForm">
+                    <div class="form-group">
+                        <label for="nomeLoja">Nome da Loja:</label>
+                        <input type="text" id="nomeLoja" name="nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefoneLoja">Telefone:</label>
+                        <input type="tel" id="telefoneLoja" name="telefone" placeholder="(99) 99999-9999" pattern="\(\d{2}\)\s\d{4,5}-\d{4}">
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Adicionar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('addLojaModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Remover Loja -->
+        <div id="removeLojaModal" class="modal">
+            <div class="modal-content">
+                <h3>Remover Loja</h3>
+                <div id="listaLojas" class="lista-produtos" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Lista de lojas será preenchida via JavaScript -->
+                </div>
+                <button class="close-modal" onclick="closeModal('removeLojaModal')">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal de Download -->
+        <div id="downloadModal" class="modal">
+            <div class="modal-content">
+                <h3>Download de Planilhas</h3>
+                <div class="download-options">
+                    <div class="download-card" onclick="downloadPlanilha('movimentacoes')">
+                        <div class="download-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Movimentações</h4>
+                            <p>Todas as movimentações do estoque</p>
+                        </div>
+                    </div>
+
+                    <div class="download-card" onclick="downloadPlanilha('produtos')">
+                        <div class="download-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Produtos</h4>
+                            <p>Lista de produtos cadastrados</p>
+                        </div>
+                    </div>
+
+                    <div class="download-card" onclick="downloadPlanilha('resumo')">
+                        <div class="download-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Resumo do Estoque</h4>
+                            <p>Resumo geral do estoque atual</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="close-modal" onclick="closeModal('downloadModal')">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>Sistema Frutos Do vale&copy; <span id="current-year"></span></p>
+            <div class="footer-links">
+                <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                <a href="#">Documentação</a>
+            </div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/estoque.js') }}"></script>
+</body>
+</html>

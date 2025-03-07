@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Tratores - N7</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tractors.css') }}">
+    <script src="{{ url_for('static', filename='js/tractors.js') }}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="main-header">
+        <div class="back-button-container">
+            <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para o Início
+            </a>
+        </div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Sistema Frutos Do vale</h1>
+                <p class="subtitle">Gestão Inteligente para sua Propriedade</p>
+            </div>
+            <div class="header-right">
+                <div class="date-display">
+                    <i class="far fa-calendar"></i>
+                    <span id="current-date"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="action-cards">
+            <!-- Abastecimento Card -->
+            <div class="action-card" id="fuelCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-gas-pump"></i>
+                    </div>
+                    <h2>Abastecimento</h2>
+                </div>
+                <div class="card-content">
+                    <p>Registre o consumo de combustível</p>
+                </div>
+                <button class="card-button" onclick="showForm('abastecimento')">
+                    Registrar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+    
+            <!-- Manutenção Card -->
+            <div class="action-card" id="maintenanceCard">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h2>Manutenção</h2>
+                </div>
+                <div class="card-content">
+                    <p>Registre serviços de manutenção</p>
+                </div>
+                <button class="card-button" onclick="showForm('manutencao')">
+                    Registrar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+    
+            <!-- Relatórios Card -->
+            <div class="action-card" id="reportsCard" onclick="showDownloadModal()">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h2>Planilhas dos Tratores</h2>
+                </div>
+                <div class="card-content">
+                    <p>Baixe planilhas detalhadas</p>
+                </div>
+                <button class="card-button">
+                    Baixar
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Table Section -->
+        <div class="table-section">
+            <div class="table-controls">
+                <select id="tableSelector" class="table-type-selector">
+                    <option value="abastecimento">Registros de Abastecimento</option>
+                    <option value="manutencao">Registros de Manutenção</option>
+                </select>
+            </div>
+            <div id="tractor-logs-table" class="table-container">
+                <!-- Table will be inserted here dynamically -->
+            </div>
+        </div>
+    
+        <!-- Form Section -->
+        <div id="formSection" class="form-section">
+            <div class="form-card">
+                <h2 id="formTitle">Registro de Operação</h2>
+                <form id="tractorForm">
+                    <div class="form-group">
+                        <label for="data">Data:</label>
+                        <input type="date" id="data" name="data" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tipoTrator">Tipo de Trator:</label>
+                        <select id="tipoTrator" name="tipoTrator" required>
+                            <option value="">Selecione o trator</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="horimetroGroup">
+                        <label for="horimetro">Horímetro:</label>
+                        <input type="number" id="horimetro" name="horimetro" step="0.1">
+                    </div>
+                    
+                    <div id="combustivelGroup" class="form-group" style="display: none;">
+                        <label for="combustivel">Combustível:</label>
+                        <select id="combustivel" name="combustivel">
+                            <option value="">Selecione o combustível</option>
+                            <option value="DIESEL">Diesel</option>
+                            <option value="GASOLINA">Gasolina</option>
+                            <option value="ETANOL">Etanol</option>
+                        </select>
+                        <div id="totalCombustivel" class="combustivel-display" style="display: none;"></div>
+                    </div>
+                    
+                    <div id="quantidadeGroup" class="form-group" style="display: none;">
+                        <label for="quantidade">Quantidade (L):</label>
+                        <input type="number" id="quantidade" name="quantidade" step="0.1">
+                    </div>
+                    
+                    <div id="tipoManutencaoGroup" class="form-group" style="display: none;">
+                        <label for="tipoManutencao">Tipo de Manutenção:</label>
+                        <select id="tipoManutencao" name="tipoManutencao">
+                            <option value="">Selecione o tipo de manutenção</option>
+                        </select>
+                    </div>
+                    
+                    <div id="operadorGroup" class="form-group" style="display: none;">
+                        <label for="operador">Operador:</label>
+                        <input type="text" id="operador" name="operador">
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" onclick="registrar()">Registrar</button>
+                        <button type="button" onclick="closeForm()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="downloadModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Download de Planilhas</h3>
+                <div class="download-options">
+                    <div class="download-card" onclick="downloadPlanilha('abastecimento')">
+                        <div class="download-icon">
+                            <i class="fas fa-gas-pump"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Planilha de Abastecimento</h4>
+                            <p>Registros de consumo de combustível</p>
+                        </div>
+                    </div>
+        
+                    <div class="download-card" onclick="downloadPlanilha('manutencao')">
+                        <div class="download-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Planilha de Manutenção</h4>
+                            <p>Histórico de manutenções realizadas</p>
+                        </div>
+                    </div>
+        
+                    <div class="download-card" onclick="downloadPlanilha('revisao')">
+                        <div class="download-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="download-info">
+                            <h4>Planilha de Revisão</h4>
+                            <p>Cronograma de revisões programadas</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="close-modal" onclick="closeDownloadModal()">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </main>
+
+
+     <!-- Footer -->
+     <footer class="main-footer">
+        <div class="footer-content">
+            <p>Sistema Frutos Do vale &copy; <span id="current-year"></span></p>
+            <div class="footer-links">
+                <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                <a href="#">Documentação</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tractors.js') }}"></script>
+</body>
+</html>

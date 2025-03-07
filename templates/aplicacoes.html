@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicações - N7</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/aplicacoes.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="back-button-container">
+            <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para o Início
+            </a>
+        </div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Sistema Frutos Do Vale</h1>
+                <p class="subtitle">Gestão de Aplicações</p>
+            </div>
+            <div class="header-right">
+                <div class="date-display">
+                    <i class="far fa-calendar"></i>
+                    <span id="current-date"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="application-section">
+            <div class="application-types">
+                <button class="type-button active" onclick="showForm('quimicos')">
+                    <i class="fas fa-spray-can"></i>
+                    Químicos
+                </button>
+                <button class="type-button" onclick="showForm('foliar')">
+                    <i class="fas fa-leaf"></i>
+                    Foliar
+                </button>
+                <button class="type-button" onclick="showForm('hormonal')">
+                    <i class="fas fa-flask"></i>
+                    Hormonal
+                </button>
+                <button class="type-button" onclick="showForm('fertirrigacao')">
+                    <i class="fas fa-water"></i>
+                    Fertirrigação
+                </button>
+            </div>
+
+            <div class="application-form" id="pulverizacaoForm">
+                <h2>Registro de Aplicações de Pulverização</h2>
+                <form id="formPulverizacao">
+
+                    <div class="form-group">
+                        <label for="dataAplicacao">Data da Aplicação:</label>
+                        <input type="date" id="dataAplicacao" name="data" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="setor">Setor:</label>
+                        <select id="setor" name="setor" required>
+                            <option value="">Selecione o setor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dap">Dias Após Poda (DAP):</label>
+                        <input type="number" id="dap" name="dap" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="semana">Semana:</label>
+                        <input type="number" id="semana" name="semana" min="1" max="52" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="volumeCalda">Volume Calda:</label>
+                        <input type="number" id="volumeCalda" name="volume_calda" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aplicador">Aplicador:</label>
+                        <select id="aplicador" name="aplicador_id" required>
+                            <option value="">Selecione o aplicador</option>
+                        </select>
+                    </div>
+
+                    <div class="produtos-section">
+                        <h3>Lista de produtos</h3>
+                        <div id="listaProdutos"></div>
+                        <button type="button" onclick="adicionarProduto()" class="btn-add-produto">
+                            Adicionar produto
+                        </button>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Criar Aplicação</button>
+                        <button type="button" class="btn-secondary" onclick="AplicacaoManager.limparFormulario()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="application-form" id="fertirrigacaoForm" style="display:none;">
+                <h2>Registro de Fertirrigação</h2>
+                <form id="formFertirrigacao">
+    
+                    <div class="form-group">
+                        <label for="dataAplicacao">Data da Aplicação:</label>
+                        <input type="date" id="dataAplicacao" name="data" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="setor">Setor:</label>
+                        <select id="setorFert" name="setor" required>
+                            <option value="">Selecione o setor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dap">Dias Após Poda (DAP):</label>
+                        <input type="number" id="dap" name="dap" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="semana">Semana:</label>
+                        <input type="number" id="semanaFert" name="semana" min="1" max="52" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="aplicador">Aplicador:</label>
+                        <select id="aplicadorFert" name="aplicador_id" required>
+                            <option value="">Selecione o aplicador</option>
+                        </select>
+                    </div>
+            
+                    <div class="produtos-section">
+                        <h3>Lista de produtos</h3>
+                        <div id="listaProdutosFert"></div>
+                        <button type="button" onclick="adicionarProdutoFert()" class="btn-add-produto">
+                            Adicionar produto
+                        </button>
+                    </div>
+            
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Criar Fertirrigação</button>
+                        <button type="button" class="btn-secondary" onclick="limparFormulario()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="setor">Filtrar por Setor:</label>
+                    <select name="setor" id="setor" aria-describedby="setor-description">
+                        <option value="">Todos os Setores</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="tipo">Filtrar por Tipo:</label>
+                    <select name="tipo" id="tipo" aria-describedby="tipo-description">
+                        <option value="">Todos os Tipos</option>
+                        <option value="QUIMICOS">Químicos</option>
+                        <option value="FOLIAR">Foliar</option>
+                        <option value="HORMONAL">Hormonal</option>
+                        <option value="FERTIRRIGACAO">Fertirrigação</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="semana">Semana:</label>
+                    <input type="number" id="semana" name="semana" min="1" max="52" aria-describedby="semana-error">
+                    <span id="semana-error" class="error-message" style="display: none;">
+                        A semana deve estar entre 1 e 52
+                    </span>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="dataInicial">Data Inicial:</label>
+                    <input type="date" id="dataInicial" aria-describedby="data-error">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="dataFinal">Data Final:</label>
+                    <input type="date" id="dataFinal" aria-describedby="data-error">
+                    <span id="data-error" class="error-message" style="display: none;">
+                        A data inicial não pode ser posterior à data final
+                    </span>
+                </div>
+                
+                <div class="filter-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="apenas_pendentes">
+                        <span class="checkbox-text">Apenas Não Concluídos</span>
+                    </label>
+                </div>
+                
+                <div class="filter-buttons">
+                    <div class="button-group">
+                        <button id="aplicar-filtros" class="btn-primary">
+                            <i class="fas fa-filter"></i>
+                            <span>Aplicar Filtros</span>
+                        </button>
+                        <button id="limpar-filtros" class="btn-secondary">
+                            <i class="fas fa-undo"></i>
+                            <span>Limpar Filtros</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Setor</th>
+                        <th>Tipo</th>
+                        <th>Data</th>
+                        <th>Aplicador</th>
+                        <th>Calda (L)</th>
+                        <th>Concluído</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="aplicacoes-tbody"></tbody>
+            </table>
+        </div>
+        
+        <!-- Modal de Detalhes -->
+        <div id="detalhesModal" class="modal">
+            <div class="modal-content">
+                <h3>Produtos Aplicados</h3>
+                <p class="modal-subtitle">Veja os produtos aplicados e as suas respectivas dosagem.</p>
+                
+                <div class="modal-info">
+                    <p class="calda-info">Volume de Calda: <span id="volumeCalda"></span></p>
+                </div>
+        
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Dosagem</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                
+                <p class="valor-total"></p>
+                
+                <button onclick="this.closest('.modal').style.display='none'" class="close-modal">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>Sistema Frutos Do vale &copy; <span id="current-year"></span></p>
+            <div class="footer-links">
+                <a href="#">Suporte</a>
+                <a href="#">Documentação</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/aplicacoes.js') }}"></script>
+</body>
+</html>
