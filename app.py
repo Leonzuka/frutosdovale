@@ -17,18 +17,19 @@ from io import BytesIO, StringIO
 from decimal import Decimal
 import pandas as pd
 import os
-
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+database_url = os.environ.get('DATABASE_URL')
+
 # Use variável de ambiente para configuração do banco de dados
-database_url = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:1234@127.0.0.1:3306/frutosdovale')
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'mysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@mysql.railway.internal:3306/railway'
 
 # Ajuste para funcionamento em produção
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 #Start URL
