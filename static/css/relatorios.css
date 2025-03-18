@@ -1,24 +1,25 @@
 /* Estilos gerais da página de relatórios */
 .main-content {
-    padding: 2rem;
+    padding: 1rem; 
     max-width: 1400px;
     margin: 0 auto;
 }
 
 /* Seção de filtros */
 .filters-section {
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
 }
 
 .filter-group {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .filter-group label {
@@ -278,30 +279,29 @@ td {
 .main-header {
     background: rgba(30, 41, 59, 0.5);
     border-bottom: 1px solid var(--border-color);
-    padding: 0;
+    padding: 0.5rem 1rem;
     backdrop-filter: blur(10px);
 }
 
 .header-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1.5rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.back-button-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem 2rem;
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .back-button {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.5rem;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
     background: var(--primary-color);
     color: var(--text-primary);
     text-decoration: none;
@@ -415,17 +415,76 @@ td {
 
 .aplicacoes-status {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas para layout 2x2 */
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.5rem;
+    background: var(--primary-color);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color); /* Adicionar borda como nos outros modais */
+    margin-bottom: 1.5rem;
+}
+
+.status-card {
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 0.5rem;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
     transition: transform 0.2s ease;
 }
 
 .status-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+}
+
+/* Cabeçalhos coloridos */
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    color: white;
+    font-weight: 600;
+}
+
+.status-header i {
+    font-size: 1.25rem;
+}
+
+.status-header.fertirrigacao {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.status-header.defensivos {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.status-header.foliar {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.status-header.hormonal {
+    background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+/* Conteúdo dos cards */
+.status-body {
+    padding: 1rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.status-item .label {
+    color: var(--text-secondary);
+}
+
+.status-item .value {
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .low-stock-table-wrapper {
@@ -569,8 +628,19 @@ td {
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Alinhamento ao topo para garantir visibilidade */
     z-index: 1000;
+    padding: 2rem 1rem; /* Adiciona espaço em cima e embaixo */
+}
+
+.modal-content.poda-modal {
+    max-width: 900px;
+    width: 100%;
+    max-height: 100vh; 
+    overflow-y: auto; /* Permite rolagem dentro do modal */
+    animation: fadeIn 0.3s ease, slideUp 0.3s ease;
+    margin: 0 auto; 
+    position: relative; /* Para posicionamento de elementos internos */
 }
 
 .modal-content {
@@ -634,4 +704,435 @@ td {
     background: var(--accent-color);
     color: white;
     cursor: pointer;
+}
+
+/* Responsividade aprimorada para dispositivos móveis */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .back-button-container {
+        padding: 0.5rem 1rem;
+    }
+    
+    .back-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .header-content {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-section {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+    
+    #applyFilters {
+        width: 100%;
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+    }
+    
+    .metrics-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        padding: 0.75rem;
+        min-height: 300px;
+        overflow-x: auto;
+    }
+    
+    .table-wrapper {
+        max-height: 300px;
+    }
+    
+    .table-container {
+        padding: 0.75rem;
+    }
+    
+    table {
+        font-size: 0.9rem;
+    }
+    
+    th, td {
+        padding: 0.5rem;
+    }
+    
+    .kpi-section {
+        padding: 0.75rem;
+    }
+    
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .download-options {
+        width: 90%;
+        max-width: 300px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .vendas-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        height: auto;
+        margin-bottom: 1.5rem;
+    }
+    
+    .vendas-filter {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .vendas-filter select {
+        width: 60%;
+    }
+    
+    .vendas-filter button {
+        width: 35%;
+    }
+    
+    /* Aumento da área de toque para maior facilidade de uso */
+    button, select, input[type="date"] {
+        min-height: 44px;
+    }
+    
+    .aplicacoes-status {
+        grid-template-columns: 1fr;
+    }
+    
+    .status-card {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Ajuste para o modal de datas */
+    .modal-content {
+        width: 95%;
+        max-width: 350px;
+        padding: 1rem;
+    }
+    
+    /* Melhorar visualização de gráficos em dispositivos móveis */
+    canvas {
+        max-height: 300px;
+    }
+}
+
+/* Regras adicionais para celulares muito pequenos */
+@media (max-width: 480px) {
+    .main-content {
+        padding: 0.75rem;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+    }
+    
+    .metric-card i {
+        font-size: 1.5rem;
+        padding: 0.75rem;
+    }
+    
+    .metric-info h3 {
+        font-size: 0.75rem;
+    }
+    
+    .metric-info p {
+        font-size: 1.25rem;
+    }
+    
+    .filter-clasificacao {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filter-clasificacao select {
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+    
+    /* Melhoria na visualização de tabelas em telas muito pequenas */
+    th, td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+
+.btn-poda {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    margin-left: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-poda:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-poda i {
+    font-size: 1rem;
+}
+
+/* Modal de podas - design refinado */
+.poda-modal {
+    max-width: 900px;
+    animation: fadeIn 0.3s ease, slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); }
+    to { transform: translateY(0); }
+}
+
+.poda-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.poda-modal .modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.3rem;
+}
+
+.poda-modal .modal-header i {
+    color: var(--accent-color);
+}
+
+.poda-modal .table-container {
+    max-height: 600px; /* Altura máxima para a tabela */
+    overflow-y: auto; /* Permitir rolagem apenas na tabela */
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.poda-modal .close-modal {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.poda-modal .close-modal:hover {
+    color: var(--text-primary);
+}
+
+.poda-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.info-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.9rem;
+}
+
+.info-badge.colheita {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.info-badge.breve {
+    background: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.info-badge.desenvolvimento {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.search-filter {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.search-filter input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background: var(--primary-color);
+    color: var(--text-primary);
+}
+
+.btn-export {
+    padding: 0.5rem 1rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-export:hover {
+    background: var(--accent-color-dark);
+    transform: translateY(-2px);
+}
+
+.poda-modal table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.poda-modal th,
+.poda-modal th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.poda-modal th {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-color);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.poda-modal tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.poda-modal tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.dap-value {
+    font-weight: 600;
+}
+
+/* Tema claro */
+[data-theme="light"] .poda-modal .search-filter input {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #000000;
+}
+
+[data-theme="light"] .poda-modal th {
+    background: #f8fafc;
+}
+
+[data-theme="light"] .poda-chart-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .btn-poda {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #3b82f6;
+}
+
+[data-theme="light"] .btn-poda:hover {
+    background: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+    .modal-content.poda-modal {
+        width: 95%;
+        margin: 1rem auto;
+        padding: 1rem;
+    }
+    
+    .poda-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .info-badge {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .search-filter {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-export {
+        width: 100%;
+        justify-content: center;
+    }
 }
