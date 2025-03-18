@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Frutos Do Vale - Relatórios - N7</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
@@ -11,16 +11,15 @@
 </head>
 <body>
     <header class="main-header">
-        <div class="back-button-container">
-            <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
-                <i class="fas fa-arrow-left"></i>
-                Voltar para o Início
-            </a>
-        </div>
         <div class="header-content">
             <div class="header-left">
-                <h1>Frutos Do Vale N7</h1>
-                <p class="subtitle">Relatórios e Análises</p>
+                <a href="{{ url_for('index') }}" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar para o Início
+                </a>
+                <div>
+                    <h1>Relatórios e Análises</h1>
+                </div>
             </div>
             <div class="header-right">
                 <div class="date-display">
@@ -50,6 +49,10 @@
                 <input type="date" id="endDate">
             </div>
             <button id="applyFilters" class="btn-primary">Aplicar Filtros</button>
+            <button id="showPodasBtn" class="btn-poda" title="Ver datas de poda">
+                <i class="fas fa-seedling"></i>
+                <span>Podas</span>
+            </button>
         </div>
 
         <!-- Cards de Métricas Principais -->
@@ -157,12 +160,20 @@
                     <button onclick="location.href='/download_excel/revisao'">
                         <i class="fas fa-file-excel"></i> Revisões
                     </button>
+                    
             
                     <!-- Relatórios de Vendas -->
                     <h4>Vendas</h4>
                     <button onclick="location.href='/download_vendas_excel?ano=2025'">
                         <i class="fas fa-file-excel"></i> Vendas de Uvas
                     </button>
+
+                    <!-- Relatórios de Aplicações -->
+                    <h4>Aplicações</h4>
+                    <button onclick="location.href='/download_relatorio_aplicacoes'">
+                        <i class="fas fa-file-excel"></i> Aplicações
+                    </button>
+    
                 </div>
 
                 <div id="dateSelectionModal" class="modal" style="display: none;">
@@ -333,7 +344,6 @@
                                 <th>Válvula</th>
                                 <th>Mão de Obra</th>
                                 <th>Insumos</th>
-                                <th>Maquinário</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
@@ -368,15 +378,11 @@
                 <div class="vendas-filter">
                     <label for="anoVendas">Ano:</label>
                     <select id="anoVendas">
-                        <option value="2024">selected>2024</option>
-                        <option value="2025">2026</option>
+                        <option value="2024">2024</option>
+                        <option value="2025" selected>2025</option>
                         <option value="2026">2026</option>
                         <option value="2027">2027</option>
                     </select>
-                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
-                    <button onclick="document.getElementById('csvFile').click()" class="btn-primary">
-                        <i class="fas fa-upload"></i> Importar CSV
-                    </button>
                     <button id="exportVendasExcel" class="btn-primary">
                         <i class="fas fa-file-excel"></i> Excel
                     </button>
@@ -384,6 +390,61 @@
             </div>
             <div class="chart-container">
                 <canvas id="vendasUvasChart"></canvas>
+            </div>
+        </div>
+        <div id="podasModal" class="modal" style="display: none;">
+            <div class="modal-content poda-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-seedling"></i> Datas de Poda por Válvula</h3>
+                    <button class="close-modal" onclick="closePodasModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-filter">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="podasSearch" placeholder="Filtrar por válvula ou variedade...">
+                        </div>
+                        <button id="exportPodasBtn" class="btn-export">
+                            <i class="fas fa-file-excel"></i> Exportar
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table id="podasTable">
+                            <thead>
+                                <tr>
+                                    <th>Válvula</th>
+                                    <th>Variedade</th>
+                                    <th>Data da Poda</th>
+                                    <th>DAP</th>
+                                    <th>Área (ha)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="podasTableBody">
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editPodaModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Editar Data de Poda</h3>
+                <div class="date-inputs">
+                    <div class="input-group">
+                        <label id="editPodaValvulaLabel">Válvula: </label>
+                        <input type="date" id="editPodaDate">
+                        <input type="hidden" id="editPodaId">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeEditPodaModal()">Cancelar</button>
+                    <button class="btn-primary" onclick="savePodaDate()">Salvar</button>
+                </div>
             </div>
         </div>
     </main>
