@@ -2,10 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Frutos Do Vale - Relatório Consolidado</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/consolidado.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="page-container">
@@ -37,13 +40,227 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div style="text-align: center; padding: 5rem 1rem;">
-                <i class="fas fa-cogs" style="font-size: 4rem; color: var(--accent-color); margin-bottom: 2rem;"></i>
-                <h2>Relatório Consolidado em Desenvolvimento</h2>
-                <p style="max-width: 600px; margin: 1rem auto;">
-                    Esta funcionalidade está em desenvolvimento e estará disponível em breve.
-                    O relatório consolidado permitirá visualizar dados de todas as fazendas em um único local.
-                </p>
+            <!-- Filtros Globais -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label for="dateRange">Período:</label>
+                    <select id="dateRange">
+                        <option value="30">Últimos 30 dias</option>
+                        <option value="90">Últimos 90 dias</option>
+                        <option value="365">Último ano</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="customDateRange" style="display: none;">
+                    <label>De:</label>
+                    <input type="date" id="startDate">
+                    <label>Até:</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button id="applyFilters" class="btn-primary">Aplicar Filtros</button>
+            </div>
+
+            <!-- Visão Geral -->
+            <div class="section-title">
+                <h2>Visão Geral</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <!-- Cards de Métricas Consolidadas -->
+            <div class="metrics-cards">
+                <div class="metric-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <div class="metric-info">
+                        <h3>Custos Totais</h3>
+                        <p id="totalCosts">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <i class="fas fa-gas-pump"></i>
+                    <div class="metric-info">
+                        <h3>Consumo Combustível</h3>
+                        <p id="fuelConsumption">0 L</p>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <i class="fas fa-spray-can"></i>
+                    <div class="metric-info">
+                        <h3>Total Aplicações</h3>
+                        <p id="totalApplications">0</p>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <i class="fas fa-users"></i>
+                    <div class="metric-info">
+                        <h3>Funcionários Ativos</h3>
+                        <p id="totalEmployees">0</p>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <i class="fas fa-boxes"></i>
+                    <div class="metric-info">
+                        <h3>Estoque Total</h3>
+                        <p id="totalStock">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparativo entre Fazendas -->
+            <div class="section-title">
+                <h2>Comparativo entre Fazendas</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <div class="farm-metrics-container">
+                <!-- Tabela de métricas por fazenda -->
+                <div class="table-container">
+                    <h3>Métricas por Fazenda</h3>
+                    <div class="table-wrapper">
+                        <table id="farmMetricsTable">
+                            <thead>
+                                <tr>
+                                    <th>Fazenda</th>
+                                    <th>Custos</th>
+                                    <th>Aplicações</th>
+                                    <th>Funcionários</th>
+                                    <th>Combustível</th>
+                                    <th>Estoque</th>
+                                </tr>
+                            </thead>
+                            <tbody id="farmMetricsTableBody">
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gráficos comparativos -->
+                <div class="farms-chart-container">
+                    <div class="chart-container">
+                        <h3>Custos por Fazenda</h3>
+                        <canvas id="farmCostsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Aplicações por Fazenda</h3>
+                        <canvas id="farmApplicationsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumo de Combustível por Fazenda -->
+            <div class="chart-container full-width">
+                <h3>Consumo de Combustível por Fazenda e Máquina</h3>
+                <canvas id="fuelConsumptionChart"></canvas>
+            </div>
+
+            <!-- Status de Aplicações -->
+            <div class="section-title">
+                <h2>Status de Aplicações</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <div class="aplicacoes-status-container">
+                <!-- Grid de status por tipo de aplicação e fazenda -->
+                <div class="aplicacoes-grid" id="aplicacoesGrid">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Vendas de Uvas -->
+            <div class="section-title">
+                <h2>Vendas de Uvas</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <div class="vendas-uvas">
+                <div class="vendas-header">
+                    <div class="vendas-filter">
+                        <label for="anoVendas">Ano:</label>
+                        <select id="anoVendas">
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="vendasUvasChart"></canvas>
+                </div>
+                <!-- Tabela de vendas por fazenda -->
+                <div class="table-container">
+                    <h3>Vendas por Fazenda</h3>
+                    <div class="table-wrapper">
+                        <table id="vendasTable">
+                            <thead>
+                                <tr>
+                                    <th>Fazenda</th>
+                                    <th>Total Kg</th>
+                                    <th>Valor Total</th>
+                                    <th>Preço Médio/Kg</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendasTableBody">
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custos Detalhados -->
+            <div class="section-title">
+                <h2>Custos Detalhados</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <div class="detailed-tables">
+                <div class="table-container">
+                    <h3>Custos por Válvula e Fazenda</h3>
+                    <div class="table-wrapper">
+                        <table id="costsTable">
+                            <thead>
+                                <tr>
+                                    <th>Fazenda</th>
+                                    <th>Válvula</th>
+                                    <th>Mão de Obra</th>
+                                    <th>Insumos</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="costsTableBody">
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs Consolidados -->
+            <div class="section-title">
+                <h2>Indicadores de Desempenho Consolidados</h2>
+                <div class="title-bar"></div>
+            </div>
+
+            <div class="kpi-section">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <h4>Custo Médio por Hectare</h4>
+                        <p id="avgCostPerHectare">R$ 0,00</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Consumo Médio de Combustível</h4>
+                        <p id="avgFuelConsumption">0 L/ha</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Taxa Média de Conclusão</h4>
+                        <p id="avgCompletionRate">0%</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Valor Médio/Kg Uva</h4>
+                        <p id="avgGrapePrice">R$ 0,00</p>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -59,17 +276,7 @@
         </footer>
     </div>
 
-    <script>
-        // Atualiza a data e ano
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateDisplay = document.getElementById('current-date');
-            const yearDisplay = document.getElementById('current-year');
-            
-            const currentDate = new Date();
-            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
-            yearDisplay.textContent = currentDate.getFullYear();
-        });
-    </script>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/consolidado.js') }}"></script>
 </body>
 </html>

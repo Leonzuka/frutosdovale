@@ -23,24 +23,26 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configuração mais robusta para o banco de dados
-database_url = os.environ.get('DATABASE_URL')
+# Arquivo: app.py
+# Alterar aproximadamente nas linhas 25-37:
 
-# Se estiver no Railway, ajuste a URL se necessário
-if database_url and database_url.startswith("mysql://"):
-    # Garantir que estamos usando o driver pymysql
-    if "pymysql" not in database_url:
-        database_url = database_url.replace('mysql://', 'mysql+pymysql://')
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # URL de fallback com driver pymysql explícito
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@mysql.railway.internal:3306/railway'
+# Configuração para o banco de dados
+database_url = os.environ.get('DATABASE_URL') or 'mysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@centerbeam.proxy.rlwy.net:10393/railway'
+
+# Garantir que estamos usando o driver pymysql
+if "pymysql" not in database_url:
+    database_url = database_url.replace('mysql://', 'mysql+pymysql://')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 # Adicione estas configurações para melhorar a estabilidade
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_recycle': 280,
     'pool_timeout': 20,
-    'pool_pre_ping': True
+    'pool_pre_ping': True,
+    'connect_args': {
+        'connect_timeout': 30
+    }
 }
 
 # Desative rastreamento de modificações para melhorar o desempenho
@@ -55,6 +57,7 @@ try:
     print("Conexão com o banco de dados estabelecida com sucesso!")
 except Exception as e:
     print(f"Erro ao conectar ao banco de dados: {e}")
+
 @app.route('/')
 def select_farm():
     # Tela de seleção de fazendas será a página inicial
@@ -2738,6 +2741,7 @@ def get_report_data():
             WITH ValveCosts AS (
                 SELECT 
                     v.valvula,
+                    v.id,
                     COALESCE(v.area_hectare, 0) as area_hectare,
                     -- Custos de mão de obra (apontamentos)
                     COALESCE(SUM(
@@ -2761,29 +2765,20 @@ def get_report_data():
                                 ORDER BY re.data DESC, re.id DESC
                                 LIMIT 1),
                                 0
-                            ) / 1000  -- Converter de ml para L
+                            ) / 1000
                         )
                         FROM calda c
                         JOIN aplicacoes a ON c.aplicacao_id = a.id
                         WHERE a.setor = v.id
-                        AND a.realizado = 1  -- Apenas aplicações realizadas
+                        AND a.realizado = 1
                         AND a.data BETWEEN :start_date AND :end_date
                         AND a.farm_id = :farm_id
                         AND c.tipo_movimento = 'SAIDA'
-                    ), 0) as inputs_cost,
-                    -- Custos de maquinário
-                    COALESCE((
-                        SELECT ABS(SUM(COALESCE(ab.quantidade, 0)))
-                        FROM abastecimento ab 
-                        WHERE ab.tipo_trator = v.valvula
-                        AND ab.data BETWEEN :start_date AND :end_date
-                        AND ab.tipo_trator != 'POSTO DE COMBUSTÍVEL'
-                        AND ab.farm_id = :farm_id
-                    ), 0) as machinery_cost
+                    ), 0) as inputs_cost
                 FROM valvulas v
                 LEFT JOIN apontamento a ON v.id = a.valvula_id
                 LEFT JOIN funcionarios f ON a.funcionario_id = f.id
-                WHERE v.id != 33  -- Excluir válvula ADM
+                WHERE v.id != 33
                 AND v.farm_id = :farm_id
                 GROUP BY v.id, v.valvula, v.area_hectare
             )
@@ -2792,10 +2787,9 @@ def get_report_data():
                 area_hectare,
                 labor_cost,
                 inputs_cost,
-                machinery_cost,
-                (labor_cost + inputs_cost + machinery_cost) as total_cost,
+                (labor_cost + inputs_cost) as total_cost,
                 CASE 
-                    WHEN area_hectare > 0 THEN (labor_cost + inputs_cost + machinery_cost) / area_hectare
+                    WHEN area_hectare > 0 THEN (labor_cost + inputs_cost) / area_hectare
                     ELSE 0
                 END as cost_per_hectare
             FROM ValveCosts
@@ -2827,7 +2821,6 @@ def get_report_data():
                 'valve': row.valvula,
                 'laborCost': float(row.labor_cost or 0),
                 'inputsCost': float(row.inputs_cost or 0),
-                'machineryCost': float(row.machinery_cost or 0),
                 'totalCost': float(row.total_cost or 0),
                 'costPerHectare': float(row.cost_per_hectare or 0)
             } for row in valve_costs],
@@ -3230,7 +3223,7 @@ def get_aplicacoes_analytics():
                     COUNT(DISTINCT aplicador_id) as total_aplicadores
                 FROM aplicacoes
                 WHERE (data BETWEEN :data_inicial AND :data_final)
-                AND farm_id = :farm_id  # Adicionar esta linha
+                AND farm_id = :farm_id
                 GROUP BY tipo
             )
             SELECT 
@@ -3902,6 +3895,606 @@ def processar_vendas_excel(df):
         db.session.rollback()
         print(f"Erro durante o processamento: {str(e)}")
         return False
+    
+# Adicione estas rotas ao final do arquivo app.py, antes do bloco if __name__ == '__main__':
+
+@app.route('/get_consolidated_report_data')
+def get_consolidated_report_data():
+    try:
+        start_date = request.args.get('startDate')
+        end_date = request.args.get('endDate')
+        
+        # Métricas gerais consolidadas
+        metrics_query = text("""
+            WITH FarmCosts AS (
+                SELECT 
+                    a.farm_id,  # Adicionado alias da tabela
+                    SUM(COALESCE(
+                        CASE 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            ELSE 0 
+                        END + COALESCE(a.extra, 0), 0)) as labor_costs
+                FROM apontamento a
+                JOIN valvulas v ON a.valvula_id = v.id
+                JOIN funcionarios f ON a.funcionario_id = f.id
+                WHERE a.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                AND v.id != 33
+                GROUP BY a.farm_id
+            ),
+            FuelData AS (
+                SELECT 
+                    ab.farm_id,  # Adicionado alias da tabela
+                    tipo_trator,
+                    ABS(SUM(CASE 
+                        WHEN quantidade IS NOT NULL THEN quantidade 
+                        ELSE 0 
+                    END)) as consumo
+                FROM abastecimento ab
+                WHERE ab.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                AND tipo_trator != 'POSTO DE COMBUSTÍVEL'
+                GROUP BY ab.farm_id, tipo_trator
+                HAVING consumo > 0
+            ),
+            ApplicationData AS (
+                SELECT 
+                    app.farm_id,  # Adicionado alias da tabela
+                    COUNT(*) as total_applications
+                FROM aplicacoes app
+                WHERE app.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                GROUP BY app.farm_id
+            ),
+            EmployeeData AS (
+                SELECT 
+                    func.farm_id,  # Adicionado alias da tabela
+                    COUNT(*) as active_employees
+                FROM funcionarios func
+                WHERE func.ativo = 1
+                GROUP BY func.farm_id
+            )
+            SELECT 
+                SUM(fc.labor_costs) as total_costs,
+                SUM(ad.total_applications) as total_applications,
+                (SELECT SUM(active_employees) FROM EmployeeData) as total_employees,
+                (SELECT SUM(fd.consumo) FROM FuelData fd) as total_fuel_consumption,
+                (SELECT AVG(
+                    CASE WHEN a.realizado IS NOT NULL AND a.realizado = 1 THEN 1 ELSE 0 END
+                ) * 100 FROM aplicacoes a WHERE a.data BETWEEN :start_date AND :end_date) as avg_efficiency
+            FROM FarmCosts fc
+            LEFT JOIN ApplicationData ad ON fc.farm_id = ad.farm_id
+            LEFT JOIN EmployeeData ed ON fc.farm_id = ed.farm_id
+        """)
+        
+        # Dados por fazenda
+        farms_query = text("""
+            WITH FarmCosts AS (
+                SELECT 
+                    a.farm_id,  # Adicionado alias da tabela
+                    SUM(COALESCE(
+                        CASE 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            ELSE 0 
+                        END + COALESCE(a.extra, 0), 0)) as labor_costs
+                FROM apontamento a
+                JOIN valvulas v ON a.valvula_id = v.id
+                JOIN funcionarios f ON a.funcionario_id = f.id
+                WHERE a.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                AND v.id != 33
+                GROUP BY a.farm_id
+            ),
+            FuelData AS (
+                SELECT 
+                    ab.farm_id,  # Adicionado alias da tabela
+                    ABS(SUM(CASE 
+                        WHEN ab.quantidade IS NOT NULL THEN ab.quantidade 
+                        ELSE 0 
+                    END)) as consumo
+                FROM abastecimento ab
+                WHERE ab.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                AND ab.tipo_trator != 'POSTO DE COMBUSTÍVEL'
+                GROUP BY ab.farm_id
+            ),
+            ApplicationData AS (
+                SELECT 
+                    app.farm_id,  # Adicionado alias da tabela
+                    COUNT(*) as total_applications
+                FROM aplicacoes app
+                WHERE app.data BETWEEN :start_date AND :end_date  # Especificado tabela para data
+                GROUP BY app.farm_id
+            ),
+            EmployeeData AS (
+                SELECT 
+                    func.farm_id,  # Adicionado alias da tabela
+                    COUNT(*) as active_employees
+                FROM funcionarios func
+                WHERE func.ativo = 1
+                GROUP BY func.farm_id
+            ),
+            StockData AS (
+                SELECT 
+                    reg.farm_id,
+                    SUM(
+                        CASE 
+                            WHEN reg.tipo_movimento = 'ENTRADA' THEN reg.quantidade * COALESCE(reg.valor_unitario, 0)
+                            ELSE 0
+                        END
+                    ) as estoque_valor
+                FROM registro_estoque reg
+                JOIN produtos p ON reg.produto_id = p.id
+                WHERE reg.data <= :end_date
+                GROUP BY reg.farm_id
+            )
+            SELECT 
+                fz.id,
+                fz.nome,
+                COALESCE(fc.labor_costs, 0) as custos,
+                COALESCE(ad.total_applications, 0) as aplicacoes,
+                COALESCE(ed.active_employees, 0) as funcionarios,
+                COALESCE(fd.consumo, 0) as combustivel,
+                COALESCE(sd.estoque_valor, 0) as estoque
+            FROM fazendas fz
+            LEFT JOIN FarmCosts fc ON fz.id = fc.farm_id
+            LEFT JOIN ApplicationData ad ON fz.id = ad.farm_id
+            LEFT JOIN EmployeeData ed ON fz.id = ed.farm_id
+            LEFT JOIN FuelData fd ON fz.id = fd.farm_id
+            LEFT JOIN StockData sd ON fz.id = sd.farm_id
+        """)
+        
+        # Dados de consumo de combustível detalhados
+        fuel_query = text("""
+            SELECT 
+                f.nome as farm,
+                a.tipo_trator as maquina,
+                ABS(SUM(a.quantidade)) as consumo
+            FROM abastecimento a
+            JOIN fazendas f ON a.farm_id = f.id
+            WHERE a.data BETWEEN :start_date AND :end_date
+            AND a.tipo_trator != 'POSTO DE COMBUSTÍVEL'
+            GROUP BY f.nome, a.tipo_trator
+            HAVING consumo > 0
+            ORDER BY f.nome, consumo DESC
+        """)
+        
+        # Dados de custos detalhados
+        costs_query = text("""
+            WITH ValveCosts AS (
+                SELECT 
+                    fz.nome as farm_name,
+                    v.valvula as valve,
+                    v.id as valve_id,
+                    v.farm_id,
+                    COALESCE(SUM(
+                        CASE WHEN a.data BETWEEN :start_date AND :end_date 
+                        THEN 
+                            CASE 
+                                WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                                ELSE 0 
+                            END + COALESCE(a.extra, 0)
+                        ELSE 0 END
+                    ), 0) as labor_cost,
+                    COALESCE((
+                        SELECT SUM(
+                            c.quantidade * COALESCE(
+                                (SELECT valor_unitario 
+                                FROM registro_estoque re 
+                                WHERE re.produto_id = c.produto_id 
+                                AND re.tipo_movimento = 'ENTRADA'
+                                AND re.data <= c.data
+                                ORDER BY re.data DESC, re.id DESC
+                                LIMIT 1),
+                                0
+                            ) / 1000
+                        )
+                        FROM calda c
+                        JOIN aplicacoes a ON c.aplicacao_id = a.id
+                        WHERE a.setor = v.id
+                        AND a.realizado = 1
+                        AND a.data BETWEEN :start_date AND :end_date
+                        AND a.farm_id = v.farm_id
+                        AND c.tipo_movimento = 'SAIDA'
+                    ), 0) as inputs_cost
+                FROM valvulas v
+                JOIN fazendas fz ON v.farm_id = fz.id
+                LEFT JOIN apontamento a ON v.id = a.valvula_id
+                LEFT JOIN funcionarios f ON a.funcionario_id = f.id
+                WHERE v.id != 33
+                GROUP BY fz.nome, v.valvula, v.id, v.farm_id
+            )
+            SELECT 
+                farm_name,
+                valve,
+                labor_cost,
+                inputs_cost,
+                (labor_cost + inputs_cost) as total_cost
+            FROM ValveCosts
+            ORDER BY farm_name, total_cost DESC
+        """)
+        
+        # KPIs gerais
+        kpis_query = text("""
+            WITH AreaTotal AS (
+                SELECT 
+                    farm_id,
+                    SUM(COALESCE(area_hectare, 0)) as area_total
+                FROM valvulas
+                WHERE id != 33
+                GROUP BY farm_id
+            ),
+            FuelConsumption AS (
+                SELECT 
+                    farm_id,
+                    ABS(SUM(CASE 
+                        WHEN quantidade IS NOT NULL THEN quantidade 
+                        ELSE 0 
+                    END)) as consumo_total
+                FROM abastecimento
+                WHERE data BETWEEN :start_date AND :end_date
+                AND tipo_trator != 'POSTO DE COMBUSTÍVEL'
+                GROUP BY farm_id
+            ),
+            CostData AS (
+                SELECT 
+                    a.farm_id,
+                    SUM(COALESCE(
+                        CASE 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            ELSE 0 
+                        END + COALESCE(extra, 0), 0)) as labor_costs
+                FROM apontamento a
+                JOIN valvulas v ON a.valvula_id = v.id
+                JOIN funcionarios f ON a.funcionario_id = f.id
+                WHERE data BETWEEN :start_date AND :end_date
+                AND v.id != 33
+                GROUP BY a.farm_id
+            )
+            SELECT 
+                SUM(at.area_total) as total_area,
+                SUM(fc.consumo_total) as total_fuel,
+                SUM(cd.labor_costs) as total_costs,
+                CASE 
+                    WHEN SUM(at.area_total) > 0 THEN SUM(cd.labor_costs) / SUM(at.area_total)
+                    ELSE 0
+                END as avg_cost_per_hectare,
+                CASE 
+                    WHEN SUM(at.area_total) > 0 THEN SUM(fc.consumo_total) / SUM(at.area_total)
+                    ELSE 0
+                END as avg_fuel_consumption
+            FROM AreaTotal at
+            JOIN FuelConsumption fc ON at.farm_id = fc.farm_id
+            JOIN CostData cd ON at.farm_id = cd.farm_id
+        """)
+        
+        # Executar as consultas
+        metrics_data = db.session.execute(metrics_query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).first()
+        
+        farms_data = db.session.execute(farms_query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).fetchall()
+        
+        fuel_data = db.session.execute(fuel_query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).fetchall()
+        
+        costs_data = db.session.execute(costs_query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).fetchall()
+        
+        kpis_data = db.session.execute(kpis_query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).first()
+        
+        # Preparar o resultado
+        return jsonify({
+            'status': 'success',
+            'metrics': {
+                'totalCosts': float(metrics_data.total_costs or 0),
+                'totalFuelConsumption': float(metrics_data.total_fuel_consumption or 0),
+                'totalApplications': int(metrics_data.total_applications or 0),
+                'totalEmployees': int(metrics_data.total_employees or 0),
+                'avgEfficiency': float(metrics_data.avg_efficiency or 0)
+            },
+            'farms': [{
+                'id': row[0], 
+                'nome': row.nome,
+                'custos': float(row.custos or 0),
+                'aplicacoes': int(row.aplicacoes or 0),
+                'funcionarios': int(row.funcionarios or 0),
+                'combustivel': float(row.combustivel or 0),
+                'estoque': float(row.estoque or 0)
+            } for row in farms_data] if farms_data else [],
+            # Garantir valores padrão para todas as propriedades
+            'fuelData': [{
+                'farm': row.farm,
+                'maquina': row.maquina,
+                'consumo': float(row.consumo or 0)
+            } for row in fuel_data] if fuel_data else [],
+
+            'costsDetails': [{
+                'farm_name': row.farm_name,
+                'valve': row.valve,
+                'laborCost': float(row.labor_cost or 0),
+                'inputsCost': float(row.inputs_cost or 0),
+                'totalCost': float(row.total_cost or 0)
+            } for row in costs_data] if costs_data else [],
+
+            'kpis': {
+                'avgCostPerHectare': float(kpis_data.avg_cost_per_hectare or 0),
+                'avgFuelConsumption': float(kpis_data.avg_fuel_consumption or 0),
+                'totalArea': float(kpis_data.total_area or 0),
+                'totalFuel': float(kpis_data.total_fuel or 0)
+            } if kpis_data else {'avgCostPerHectare': 0, 'avgFuelConsumption': 0, 'totalArea': 0, 'totalFuel': 0}
+        })
+    except Exception as e:
+        # Melhorar o log de erros
+        print(f"Erro detalhado ao carregar dados para relatório consolidado: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/get_consolidated_stock')
+def get_consolidated_stock():
+    try:
+        query = text("""
+            WITH UltimoValor AS (
+                SELECT 
+                    re.farm_id,  # Especificando a tabela (re.)
+                    re.produto_id,
+                    MAX(re.id) as ultimo_id
+                FROM registro_estoque re
+                WHERE re.tipo_movimento = 'ENTRADA'
+                AND re.valor_unitario IS NOT NULL
+                GROUP BY re.farm_id, re.produto_id
+            ),
+            EstoqueRegular AS (
+                SELECT 
+                    re.farm_id,
+                    p.id,
+                    SUM(CASE 
+                        WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade 
+                        WHEN re.tipo_movimento = 'SAIDA' THEN -re.quantidade 
+                        ELSE 0 
+                    END) as saldo_atual
+                FROM produtos p
+                LEFT JOIN registro_estoque re ON p.id = re.produto_id
+                WHERE p.ativo = 1
+                GROUP BY re.farm_id, p.id
+                HAVING saldo_atual > 0
+            ),
+            EstoqueCalda AS (
+                SELECT 
+                    c.farm_id,
+                    p.id,
+                    SUM(CASE 
+                        WHEN c.tipo_movimento = 'ENTRADA' THEN c.quantidade 
+                        WHEN c.tipo_movimento = 'SAIDA' THEN -c.quantidade 
+                        ELSE 0 
+                    END) as saldo_atual
+                FROM produtos p
+                JOIN calda c ON p.id = c.produto_id
+                WHERE p.ativo = 1
+                GROUP BY c.farm_id, p.id
+                HAVING saldo_atual > 0
+            ),
+            EstoqueTotal AS (
+                SELECT 
+                    er.farm_id,  # Especificando a tabela (er.)
+                    SUM(
+                        er.saldo_atual * COALESCE(
+                            (SELECT re2.valor_unitario 
+                            FROM registro_estoque re2 
+                            WHERE re2.id = uv.ultimo_id),
+                            0
+                        )
+                    ) as valor_total
+                FROM EstoqueRegular er
+                LEFT JOIN UltimoValor uv ON er.farm_id = uv.farm_id AND er.id = uv.produto_id
+                GROUP BY er.farm_id
+                
+                UNION ALL
+                
+                SELECT 
+                    ec.farm_id,  # Especificando a tabela (ec.)
+                    SUM(
+                        ec.saldo_atual * COALESCE(
+                            (SELECT re3.valor_unitario 
+                            FROM registro_estoque re3 
+                            WHERE re3.farm_id = ec.farm_id
+                            AND re3.produto_id = ec.id
+                            AND re3.tipo_movimento = 'ENTRADA'
+                            AND re3.valor_unitario IS NOT NULL
+                            ORDER BY re3.data DESC, re3.id DESC
+                            LIMIT 1),
+                            0
+                        )
+                    ) as valor_total
+                FROM EstoqueCalda ec
+                GROUP BY ec.farm_id
+            )
+            SELECT SUM(et.valor_total) as valor_total
+            FROM EstoqueTotal et
+        """)
+        
+        result = db.session.execute(query).scalar()
+        
+        return jsonify({
+            'status': 'success',
+            'valor_total': float(result) if result else 0
+        })
+    except Exception as e:
+        print(f"Erro ao buscar valor total consolidado do estoque: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/get_consolidated_aplicacoes')
+def get_consolidated_aplicacoes():
+    try:
+        data_inicial = request.args.get('data_inicial')
+        data_final = request.args.get('data_final')
+        
+        query = text("""
+            WITH TiposAplicacao AS (
+                SELECT 'QUIMICOS' as tipo UNION ALL
+                SELECT 'FERTIRRIGACAO' UNION ALL
+                SELECT 'FOLIAR' UNION ALL
+                SELECT 'HORMONAL'
+            ),
+            AplicacoesData AS (
+                SELECT 
+                    a.farm_id,
+                    f.nome as farm_name,
+                    a.tipo,
+                    COUNT(*) as total_aplicacoes,
+                    SUM(CASE WHEN a.realizado = 1 THEN 1 ELSE 0 END) as realizadas,
+                    SUM(CASE WHEN a.realizado = 0 OR a.realizado IS NULL THEN 1 ELSE 0 END) as pendentes
+                FROM aplicacoes a
+                JOIN fazendas f ON a.farm_id = f.id
+                WHERE a.data BETWEEN :data_inicial AND :data_final
+                GROUP BY a.farm_id, f.nome, a.tipo
+            )
+            SELECT 
+                f.id as farm_id,
+                f.nome as farm_name,
+                ta.tipo,
+                COALESCE(ad.total_aplicacoes, 0) as total_aplicacoes,
+                COALESCE(ad.realizadas, 0) as realizadas,
+                COALESCE(ad.pendentes, 0) as pendentes,
+                CASE 
+                    WHEN COALESCE(ad.total_aplicacoes, 0) > 0 
+                    THEN (COALESCE(ad.realizadas, 0) * 100.0 / COALESCE(ad.total_aplicacoes, 1))
+                    ELSE 0
+                END as taxa_conclusao
+            FROM fazendas f
+            CROSS JOIN TiposAplicacao ta
+            LEFT JOIN AplicacoesData ad ON f.id = ad.farm_id AND ta.tipo = ad.tipo
+            ORDER BY f.nome, ta.tipo
+        """)
+        
+        result = db.session.execute(query, {
+            'data_inicial': data_inicial,
+            'data_final': data_final
+        }).fetchall()
+        
+        # Organizar resultados por fazenda
+        farms = {}
+        for row in result:
+            farm_id = row.farm_id
+            if farm_id not in farms:
+                farms[farm_id] = {
+                    'farm_id': farm_id,
+                    'farm_name': row.farm_name,
+                    'tipos': []
+                }
+            
+            farms[farm_id]['tipos'].append({
+                'tipo': row.tipo,
+                'total_aplicacoes': int(row.total_aplicacoes),
+                'realizadas': int(row.realizadas),
+                'pendentes': int(row.pendentes),
+                'taxa_conclusao': float(row.taxa_conclusao)
+            })
+        
+        # Calcular estatísticas gerais
+        total_aplicacoes = sum(row.total_aplicacoes for row in result)
+        total_realizadas = sum(row.realizadas for row in result)
+        avg_completion_rate = (total_realizadas / total_aplicacoes * 100) if total_aplicacoes > 0 else 0
+        
+        return jsonify({
+            'status': 'success',
+            'aplicacoes': list(farms.values()),
+            'stats': {
+                'total_aplicacoes': total_aplicacoes,
+                'total_realizadas': total_realizadas,
+                'avg_completion_rate': avg_completion_rate
+            }
+        })
+    except Exception as e:
+        print(f"Erro ao carregar dados consolidados de aplicações: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/get_consolidated_vendas')
+def get_consolidated_vendas():
+    try:
+        ano = request.args.get('ano', '2025')
+        
+        # Query para vendas por mês e fazenda
+        vendas_query = text("""
+            SELECT 
+                f.nome as farm_name,
+                DATE_FORMAT(vu.data, '%m/%Y') as mes,
+                SUM(vu.qte * 5) as quilo,
+                SUM(vu.valor_pago) as valor
+            FROM vendas_uva vu
+            JOIN fazendas f ON vu.farm_id = f.id
+            WHERE YEAR(vu.data) = :ano
+            GROUP BY f.nome, mes
+            ORDER BY f.nome, STR_TO_DATE(mes, '%m/%Y')
+        """)
+        
+        # Query para resumo por fazenda
+        resumo_query = text("""
+            SELECT 
+                f.nome,
+                SUM(vu.qte * 5) as total_kg,
+                SUM(vu.valor_pago) as valor_total,
+                CASE 
+                    WHEN SUM(vu.qte * 5) > 0 THEN SUM(vu.valor_pago) / SUM(vu.qte * 5)
+                    ELSE 0
+                END as preco_medio
+            FROM vendas_uva vu
+            JOIN fazendas f ON vu.farm_id = f.id
+            WHERE YEAR(vu.data) = :ano
+            GROUP BY f.nome
+            ORDER BY total_kg DESC
+        """)
+        
+        vendas_result = db.session.execute(vendas_query, {'ano': ano}).fetchall()
+        resumo_result = db.session.execute(resumo_query, {'ano': ano}).fetchall()
+        
+        # Calcular estatísticas gerais
+        total_kg = sum(float(row.total_kg) for row in resumo_result)
+        total_valor = sum(float(row.valor_total) for row in resumo_result)
+        avg_price = total_valor / total_kg if total_kg > 0 else 0
+        
+        return jsonify({
+            'status': 'success',
+            'vendas': [{
+                'farm_name': row.farm_name,
+                'mes': row.mes,
+                'quilo': float(row.quilo),
+                'valor': float(row.valor)
+            } for row in vendas_result],
+            'vendas_por_fazenda': [{
+                'nome': row.nome,
+                'total_kg': float(row.total_kg),
+                'valor_total': float(row.valor_total),
+                'preco_medio': float(row.preco_medio)
+            } for row in resumo_result],
+            'stats': {
+                'total_kg': total_kg,
+                'total_valor': total_valor,
+                'avg_price': avg_price
+            }
+        })
+    except Exception as e:
+        print(f"Erro ao carregar dados consolidados de vendas: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
     
 if __name__ == '__main__':
     app.run(debug=True)
