@@ -22,19 +22,39 @@ from urllib.parse import urlparse
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+# Configuração mais robusta para o banco de dados
 database_url = os.environ.get('DATABASE_URL')
 
-# Use variável de ambiente para configuração do banco de dados
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'mysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@mysql.railway.internal:3306/railway'
+# Se estiver no Railway, ajuste a URL se necessário
+if database_url and database_url.startswith("mysql://"):
+    # Garantir que estamos usando o driver pymysql
+    if "pymysql" not in database_url:
+        database_url = database_url.replace('mysql://', 'mysql+pymysql://')
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # URL de fallback com driver pymysql explícito
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@mysql.railway.internal:3306/railway'
 
-# Ajuste para funcionamento em produção
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+# Adicione estas configurações para melhorar a estabilidade
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 280,
+    'pool_timeout': 20,
+    'pool_pre_ping': True
+}
+
+# Desative rastreamento de modificações para melhorar o desempenho
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 #Start URL
 db = SQLAlchemy(app)
 
+try:
+    with app.app_context():
+        db.engine.execute("SELECT 1")
+    print("Conexão com o banco de dados estabelecida com sucesso!")
+except Exception as e:
+    print(f"Erro ao conectar ao banco de dados: {e}")
 @app.route('/')
 def select_farm():
     # Tela de seleção de fazendas será a página inicial
