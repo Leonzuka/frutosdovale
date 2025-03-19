@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutos Do Vale - Relatórios - N7</title>
+    <title>Frutos Do Vale - Relatórios</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -13,7 +13,7 @@
     <header class="main-header">
         <div class="header-content">
             <div class="header-left">
-                <a href="{{ url_for('index') }}" class="back-button">
+                <a href="{{ url_for('index', farm_id=farm_id) }}" class="back-button">
                     <i class="fas fa-arrow-left"></i>
                     Voltar para o Início
                 </a>
@@ -451,7 +451,7 @@
 
     <footer class="main-footer">
         <div class="footer-content">
-            <p>Sistema Frutos Do Vale&copy; <span id="current-year"></span></p>
+            <p>Frutos Do Vale &copy; <span id="current-year"></span></p>
             <div class="footer-links">
                 <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
                 <a href="#">Documentação</a>
