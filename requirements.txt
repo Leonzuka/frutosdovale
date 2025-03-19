@@ -13,4 +13,4 @@ itsdangerous==2.0.1
 MarkupSafe==2.0.1
 SQLAlchemy==1.4.23
 numpy==1.21.5
-
+cryptography>=38.0.0
