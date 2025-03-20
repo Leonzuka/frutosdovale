@@ -575,3 +575,49 @@
     border: 1px solid #e2e8f0;
     color: #000000;
 }
+
+/* Melhorar alinhamento das colunas no histórico de apontamentos */
+.registro-header > div {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Alinhar cada tipo de dado adequadamente */
+.registro-item > div {
+    display: flex;
+    align-items: center;
+}
+
+/* Data e nome do funcionário à esquerda */
+.registro-item > div:nth-child(1),
+.registro-item > div:nth-child(2) {
+    justify-content: flex-start;
+}
+
+/* Atividade à esquerda e melhorar espaço */
+.registro-item > div:nth-child(3) {
+    justify-content: flex-start;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Valores numéricos à direita */
+.registro-item > div:nth-child(4),
+.registro-item > div:nth-child(5),
+.registro-item > div:nth-child(6),
+.registro-item > div:nth-child(7) {
+    justify-content: flex-end;
+}
+
+/* Botão ao centro */
+.registro-item > div:nth-child(8) {
+    justify-content: center;
+}
+
+/* Ajustar o botão para não deformar o layout */
+.registro-item .delete-button {
+    margin: 0 auto;
+}
