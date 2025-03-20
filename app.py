@@ -2132,6 +2132,7 @@ def get_ultimos_apontamentos_paginado():
                 a.meta,
                 a.valor_unit,
                 a.extra,
+                a.hora,
                 a.observacao
             FROM apontamento a
             JOIN funcionarios f ON a.funcionario_id = f.id
@@ -2150,7 +2151,8 @@ def get_ultimos_apontamentos_paginado():
             'atividade': row.atividade,
             'realizado': float(row.realizado),
             'meta': float(row.meta),
-            'extra': float(row.extra) if row.extra else 0
+            'extra': float(row.extra) if row.extra else 0,
+            'hora': float(row.hora) if row.hora else 0
         } for row in result]
         
         total_pages = (total_registros + per_page - 1) // per_page
