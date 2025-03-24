@@ -1621,7 +1621,6 @@ def download_apontamento(tipo):
     except Exception as e:
         print(f"Error generating Excel file: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
 @app.route('/download_apontamento/resumo')
 def download_resumo_apontamento():
     try:
@@ -1687,7 +1686,7 @@ def download_resumo_apontamento():
             ORDER BY f.nome
         """)
 
-        # Query para os detalhes individuais
+        # Query para os detalhes individuais - agora inclui tipo_apontamento
         query_detalhes = text("""
             SELECT 
                 f.nome as funcionario,
@@ -1697,7 +1696,8 @@ def download_resumo_apontamento():
                 a.realizado,
                 a.valor_unit,
                 a.extra,
-                a.hora
+                a.hora,
+                a.tipo_apontamento
             FROM apontamento a
             JOIN funcionarios f ON a.funcionario_id = f.id
             JOIN atividade at ON a.atividade_id = at.id
@@ -1734,7 +1734,7 @@ def download_resumo_apontamento():
             
             # Verificar tipo de contratação
             if row['tipo_contratacao'] == 'CLT':
-                ws.cell(row=r, column=2, value='Salário Normal')
+                ws.cell(row=r, column=2, value='Salário CLT')
             else:
                 ws.cell(row=r, column=2, value=float(row['salario_base'])).number_format = '#,##0.00'
             
@@ -1742,11 +1742,13 @@ def download_resumo_apontamento():
             
             # Verificar tipo de contratação para o total do período também
             if row['tipo_contratacao'] == 'CLT':
-                ws.cell(row=r, column=4, value='Salário Normal + ' + format(float(row['extra_total']), '.2f'))
+                valor_formatado = f'R$ {float(row["extra_total"]):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+                ws.cell(row=r, column=4, value=f'Salário CLT + {valor_formatado}')
             else:
                 ws.cell(row=r, column=4, value=float(row['total_periodo'])).number_format = '#,##0.00'
             
-            ws.cell(row=r, column=5, value=row['pix'])
+            # Adicionar PIX, Horas e Faltas
+            ws.cell(row=r, column=5, value=row['pix'] if pd.notna(row['pix']) else '')
             ws.cell(row=r, column=6, value=float(row['horas'])).number_format = '#,##0.00'
             ws.cell(row=r, column=7, value=int(row['total_faltas']))
 
@@ -1761,6 +1763,9 @@ def download_resumo_apontamento():
                 cell.font = Font(bold=True, color="FFFFFF")
                 cell.fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
             
+            # Para armazenar a soma de extras com bônus
+            total_extra_com_bonus = 0
+            
             for idx, row in dados_func.iterrows():
                 r = idx - dados_func.index[0] + 2
                 ws_func.cell(row=r, column=1, value=row['data'].strftime('%d/%m/%Y'))
@@ -1768,16 +1773,41 @@ def download_resumo_apontamento():
                 ws_func.cell(row=r, column=3, value=float(row['meta'])).number_format = '#,##0.00'
                 ws_func.cell(row=r, column=4, value=float(row['realizado'])).number_format = '#,##0.00'
                 ws_func.cell(row=r, column=5, value=float(row['valor_unit'])).number_format = '#,##0.00'
-                ws_func.cell(row=r, column=6, value=float(row['extra'])).number_format = '#,##0.00'
-                ws_func.cell(row=r, column=7, value=float(row['hora'])).number_format = '#,##0.00'
+                
+                # Calcular extra com bônus de horas extras
+                extra_original = float(row['extra'] or 0)
+                horas_extras = float(row['hora'] or 0)
+                bonus_horas = 0
+                
+                # Verificar se o tipo é 'Hora' ou 'Compensado' para adicionar bônus
+                if row['tipo_apontamento'] in ['Hora', 'Compensado'] and horas_extras > 0:
+                    # Calcular o bônus baseado nas horas extras
+                    if horas_extras <= 0.5:  # Até 30 minutos
+                        bonus_horas = 5
+                    else:  # Mais de 30 minutos
+                        bonus_horas = 10 * int(horas_extras)  # R$10 por hora completa
+                        if horas_extras % 1 > 0:  # Se tiver fração de hora
+                            bonus_horas += 5  # Adiciona R$5
+                
+                # Adicionar o bônus ao extra existente
+                extra_total = extra_original + bonus_horas
+                total_extra_com_bonus += extra_total
+                
+                # Atualizar o valor na célula de extra
+                ws_func.cell(row=r, column=6, value=extra_total).number_format = '#,##0.00'
+                ws_func.cell(row=r, column=7, value=float(row['hora'] or 0)).number_format = '#,##0.00'
             
             # Adicionar totais
             last_row = len(dados_func) + 2
             ws_func.cell(row=last_row, column=5, value='Totais:').font = Font(bold=True)
-            total_extra = ws_func.cell(row=last_row, column=6, value=float(dados_func['extra'].sum()))
+            
+            # Usar o total calculado com bônus
+            total_extra = ws_func.cell(row=last_row, column=6, value=total_extra_com_bonus)
             total_extra.font = Font(bold=True)
             total_extra.number_format = '#,##0.00'
-            total_horas = ws_func.cell(row=last_row, column=7, value=float(dados_func['hora'].sum()))
+            
+            # Usar pandas para calcular o total de horas
+            total_horas = ws_func.cell(row=last_row, column=7, value=float(dados_func['hora'].sum() or 0))
             total_horas.font = Font(bold=True)
             total_horas.number_format = '#,##0.00'
             
@@ -1804,7 +1834,7 @@ def download_resumo_apontamento():
     except Exception as e:
         print(f"Erro ao gerar relatório: {str(e)}")
         return jsonify({'error': str(e)}), 500
-    
+
 @app.route('/adicionar_atividade', methods=['POST'])
 def adicionar_atividade():
     try:
