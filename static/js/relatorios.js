@@ -65,6 +65,205 @@ function setupEventListeners() {
     document.getElementById('anoVendas').addEventListener('change', updateVendasUvasChart);
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar o botão de podas
+    const showPodasBtn = document.getElementById('showPodasBtn');
+    if (showPodasBtn) {
+        showPodasBtn.addEventListener('click', function() {
+            document.getElementById('podasModal').style.display = 'flex';
+            loadPodasData();
+        });
+    }
+    
+    // Função para fechar o modal de podas
+    window.closePodasModal = function() {
+        document.getElementById('podasModal').style.display = 'none';
+    };
+    
+    // Adicionar a função de carregar dados de podas
+    window.loadPodasData = function() {
+        fetch('/get_valvulas_poda')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderPodasTable(data.valvulas);
+                } else {
+                    console.error('Erro ao carregar dados de poda:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+            });
+    };
+    
+    // Função para renderizar a tabela de podas
+    function renderPodasTable(valvulas) {
+        const tbody = document.getElementById('podasTableBody');
+        tbody.innerHTML = '';
+        
+        const today = new Date();
+        
+        valvulas.forEach(valvula => {
+            const tr = document.createElement('tr');
+            
+            // Calcular DAP (Dias Após Poda)
+            let dapText = 'Não podada';
+            let dapValue = '';
+            
+            if (valvula.data_poda) {
+                // Correção para o problema de timezone
+                // Extrair ano, mês e dia diretamente da string da data
+                let dataISO = valvula.data_poda;
+                if (dataISO.includes('T')) {
+                    dataISO = dataISO.split('T')[0];
+                }
+                
+                // Criar a data usando o constructor de data com ano, mês (0-11) e dia
+                const [ano, mes, dia] = dataISO.split('-').map(Number);
+                const podaDate = new Date(ano, mes - 1, dia);  // Ajuste no mês (JS usa 0-11)
+                
+                const diffTime = Math.abs(today - podaDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                dapText = diffDays.toString();
+                dapValue = diffDays;
+                
+                // Formatação da data para DD/MM/YYYY sem problemas de timezone
+                const diaFormatado = dia.toString().padStart(2, '0');
+                const mesFormatado = (mes).toString().padStart(2, '0');
+                var dataFormatada = `${diaFormatado}/${mesFormatado}/${ano}`;
+            } else {
+                var dataFormatada = 'Não definida';
+            }
+            
+            tr.innerHTML = `
+                <td>${valvula.valvula}</td>
+                <td>${valvula.variedade || '-'}</td>
+                <td>${dataFormatada}</td>
+                <td class="dap-value">${dapText}</td>
+                <td>${valvula.area_hectare ? valvula.area_hectare.toFixed(2) : '-'}</td>
+                <td>
+                    <button class="edit-poda-btn" onclick="showEditPodaModal(${valvula.id}, '${valvula.valvula}')">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Função para mostrar o modal de edição de poda
+    window.showEditPodaModal = function(id, valvulaName) {
+        const modal = document.getElementById('editPodaModal');
+        document.getElementById('editPodaId').value = id;
+        document.getElementById('editPodaValvulaLabel').textContent = `Válvula: ${valvulaName}`;
+        
+        // Buscar a data atual da poda para esta válvula
+        fetch(`/get_valvula/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.valvula.data_poda) {
+                    // Extrair apenas a parte da data (YYYY-MM-DD)
+                    const dataPoda = data.valvula.data_poda;
+                    let dataCorrigida;
+                    
+                    // Verificar diferentes formatos possíveis e extrair apenas a data YYYY-MM-DD
+                    if (dataPoda.includes('T')) {
+                        dataCorrigida = dataPoda.split('T')[0];
+                    } else if (dataPoda.includes(' ')) {
+                        dataCorrigida = dataPoda.split(' ')[0];
+                    } else {
+                        dataCorrigida = dataPoda;
+                    }
+                    
+                    // Definir o valor no campo de data
+                    document.getElementById('editPodaDate').value = dataCorrigida;
+                    console.log("Data formatada para o formulário:", dataCorrigida);
+                } else {
+                    // Se não tem data, limpar o campo
+                    document.getElementById('editPodaDate').value = '';
+                }
+                modal.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados da válvula:', error);
+                modal.style.display = 'flex';
+            });
+    };
+    
+    // Função para fechar o modal de edição de poda
+    window.closeEditPodaModal = function() {
+        document.getElementById('editPodaModal').style.display = 'none';
+    };
+    
+    // Função para salvar a data de poda
+    window.savePodaDate = function() {
+        const id = document.getElementById('editPodaId').value;
+        const date = document.getElementById('editPodaDate').value;
+        
+        if (!date) {
+            alert('Por favor, selecione uma data válida.');
+            return;
+        }
+        
+        // Garantir que a data esteja no formato YYYY-MM-DD
+        let dataFormatada = date;
+        if (date.includes('/')) {
+            const partes = date.split('/');
+            dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
+        }
+        
+        fetch(`/update_poda_date/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data_poda: dataFormatada })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeEditPodaModal();
+                loadPodasData();
+            } else {
+                alert('Erro ao atualizar data de poda: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar data de poda');
+        });
+    };
+    
+    // Configurar o campo de busca para a tabela de podas
+    const podasSearch = document.getElementById('podasSearch');
+    if (podasSearch) {
+        podasSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#podasTableBody tr');
+            
+            rows.forEach(row => {
+                const valvula = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const variedade = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                
+                if (valvula.includes(searchTerm) || variedade.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Configurar o botão de exportação de podas
+    const exportPodasBtn = document.getElementById('exportPodasBtn');
+    if (exportPodasBtn) {
+        exportPodasBtn.addEventListener('click', function() {
+            window.location.href = '/download_podas_excel';
+        });
+    }
+});
+
 async function loadAllData() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -598,31 +797,35 @@ function downloadExtraPayment() {
     closeModal();
 }
 
-document.getElementById('csvFile').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// Verificar se o elemento existe antes de adicionar o evento
+const csvFileInput = document.getElementById('csvFile');
+if (csvFileInput) {
+    csvFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+        const formData = new FormData();
+        formData.append('file', file);
 
-    try {
-        const response = await fetch('/importar_vendas', {
-            method: 'POST',
-            body: formData
-        });
+        try {
+            const response = await fetch('/importar_vendas', {
+                method: 'POST',
+                body: formData
+            });
 
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Dados importados com sucesso!');
-            updateVendasUvasChart(); // Atualiza o gráfico
-        } else {
-            alert('Erro ao importar dados: ' + data.error);
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Dados importados com sucesso!');
+                updateVendasUvasChart(); // Atualiza o gráfico
+            } else {
+                alert('Erro ao importar dados: ' + data.error);
+            }
+        } catch (error) {
+            alert('Erro ao importar arquivo: ' + error);
         }
-    } catch (error) {
-        alert('Erro ao importar arquivo: ' + error);
-    }
 
-    // Limpar o input para permitir selecionar o mesmo arquivo novamente
-    e.target.value = '';
-});
+        // Limpar o input para permitir selecionar o mesmo arquivo novamente
+        e.target.value = '';
+    });
+}

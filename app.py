@@ -3271,7 +3271,6 @@ def get_aplicacoes_analytics():
 @app.route('/get_vendas_uvas')
 def get_vendas_uvas():
     try:
-        farm_id = session.get('farm_id')
         data_inicial = request.args.get('data_inicial')
         data_final = request.args.get('data_final')
         
@@ -3281,15 +3280,13 @@ def get_vendas_uvas():
                 SUM(qte * 5) as quilo
             FROM vendas_uva
             WHERE data BETWEEN :data_inicial AND :data_final
-            AND farm_id = :farm_id  # Adicionar esta linha
             GROUP BY mes
             ORDER BY STR_TO_DATE(mes, '%m/%Y')
         """)
         
         result = db.session.execute(query, {
             'data_inicial': data_inicial,
-            'data_final': data_final,
-            'farm_id': farm_id
+            'data_final': data_final
         })
         
         vendas = [{
@@ -3311,6 +3308,7 @@ def get_vendas_uvas():
 def download_vendas_excel():
     try:
         farm_id = session.get('farm_id')
+        
         # Definir as funções de formatação primeiro
         def format_currency(value):
             if pd.isna(value):
@@ -3332,8 +3330,12 @@ def download_vendas_excel():
         wb = Workbook()
         ws_relatorio = wb.active  # Primeira aba
         ws_relatorio.title = "Relatório"
+        
+        # CRIAR AS OUTRAS ABAS NECESSÁRIAS
+        ws_vendas = wb.create_sheet(title="Vendas")
+        ws_produtos = wb.create_sheet(title="Produtos")
 
-        # Query vendas
+        # Query vendas - MODIFICADA PARA REMOVER A CONDIÇÃO FARM_ID
         query_vendas = text("""
             SELECT 
                 vu.data as 'Data',
@@ -3348,11 +3350,10 @@ def download_vendas_excel():
                 vu.semana as 'Semana'
             FROM vendas_uva vu
             WHERE YEAR(vu.data) = :ano
-            AND vu.farm_id = :farm_id  # Adicionar esta linha
             ORDER BY vu.data DESC
         """)
         
-        df_vendas = pd.read_sql(query_vendas, db.engine, params={'ano': ano, 'farm_id': farm_id})
+        df_vendas = pd.read_sql(query_vendas, db.engine, params={'ano': ano})
         df_vendas['Data'] = pd.to_datetime(df_vendas['Data']).dt.strftime('%d/%m/%Y')
         
         # Formatação das colunas de vendas
@@ -3360,25 +3361,28 @@ def download_vendas_excel():
         df_vendas['Valor Total'] = df_vendas['Valor Total'].apply(format_currency)
         df_vendas['Peso (kg)'] = df_vendas['Peso (kg)'].apply(format_kg)
         df_vendas['Quantidade'] = df_vendas['Quantidade'].apply(format_integer)
+        
+        # Adicionar dados à aba de vendas
+        for r_idx, row in enumerate(dataframe_to_rows(df_vendas, index=False), 1):
+            for c_idx, value in enumerate(row, 1):
+                ws_vendas.cell(row=r_idx, column=c_idx, value=value)
 
-        # Query resumo
+        # Query resumo - MODIFICADA PARA REMOVER A CONDIÇÃO FARM_ID
         query_resumo = text("""
             SELECT 
-                u.uva_produto as 'Produto',
+                produto as 'Produto',
                 COUNT(*) as 'Total Vendas',
-                SUM(vu.qte) as 'Total Caixas',
-                SUM(vu.quilo) as 'Total Kg',
-                AVG(vu.unitario) as 'Preço Médio',
-                SUM(vu.total) as 'Valor Total'
-            FROM vendas_uva vu
-            JOIN uva u ON vu.id_uva = u.iduva
-            WHERE YEAR(vu.data) = :ano
-            AND vu.farm_id = :farm_id
-            GROUP BY u.uva_produto
-            ORDER BY SUM(vu.quilo) DESC
+                SUM(qte) as 'Total Caixas',
+                SUM(qte * 5) as 'Total Kg',
+                AVG(valor_pago / qte) as 'Preço Médio',
+                SUM(valor_pago) as 'Valor Total'
+            FROM vendas_uva
+            WHERE YEAR(data) = :ano
+            GROUP BY produto
+            ORDER BY SUM(qte * 5) DESC
         """)
 
-        df_relatorio = pd.read_sql(query_resumo, db.engine, params={'ano': ano, 'farm_id': farm_id})
+        df_relatorio = pd.read_sql(query_resumo, db.engine, params={'ano': ano})
         
         # Formatação das colunas do relatório
         df_relatorio['Preço Médio'] = df_relatorio['Preço Médio'].apply(format_currency)
@@ -3386,69 +3390,23 @@ def download_vendas_excel():
         df_relatorio['Total Kg'] = df_relatorio['Total Kg'].apply(format_kg)
         df_relatorio['Total Caixas'] = df_relatorio['Total Caixas'].apply(format_integer)
         df_relatorio['Total Vendas'] = df_relatorio['Total Vendas'].apply(format_integer)
-
-
-        # 2. Agora o resumo
-        query_resumo = text("""
-            SELECT 
-                u.uva_produto as 'Produto',
-                COUNT(*) as 'Total Vendas',
-                SUM(vu.qte) as 'Total Caixas',
-                SUM(vu.quilo) as 'Total Kg',
-                AVG(vu.unitario) as 'Preço Médio',
-                SUM(vu.total) as 'Valor Total'
-            FROM vendas_uva vu
-            JOIN uva u ON vu.id_uva = u.iduva
-            WHERE YEAR(vu.data) = :ano
-            GROUP BY u.uva_produto
-            ORDER BY SUM(vu.quilo) DESC
-        """)
-
-        df_relatorio = pd.read_sql(query_resumo, db.engine, params={'ano': ano})
-
-        def format_currency(value):
-            return f'R$ {value:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
-
-        def format_kg(value):
-            if pd.isna(value):
-                return '0 kg'
-            return f'{int(value):,} kg'.replace(',', '.')
-
-        # Formatar colunas específicas
-        df_relatorio['Preço Médio'] = df_relatorio['Preço Médio'].apply(format_currency)
-        df_relatorio['Valor Total'] = df_relatorio['Valor Total'].apply(format_currency)
-        df_relatorio['Total Kg'] = df_relatorio['Total Kg'].apply(format_kg)
-        df_relatorio['Total Caixas'] = df_relatorio['Total Caixas'].apply(lambda x: f'{int(x):,}'.replace(',', '.'))
-
-        # Preencher a aba RelatórioS
+        
+        # Adicionar dados à aba de relatório
         for r_idx, row in enumerate(dataframe_to_rows(df_relatorio, index=False), 1):
             for c_idx, value in enumerate(row, 1):
-                cell = ws_relatorio.cell(row=r_idx, column=c_idx, value=value)
-                if isinstance(value, (int, float)):
-                    cell.number_format = '#,##0.00'
+                ws_relatorio.cell(row=r_idx, column=c_idx, value=value)
 
-        # 3. Criar e preencher a aba Vendas
-        ws_vendas = wb.create_sheet("Vendas")
-        for r_idx, row in enumerate(dataframe_to_rows(df_vendas, index=False), 1):
-            for c_idx, value in enumerate(row, 1):
-                cell = ws_vendas.cell(row=r_idx, column=c_idx, value=value)
-                if isinstance(value, (int, float)):
-                    cell.number_format = '#,##0.00'
-
-        # 4. Criar e preencher a aba Produtos
-        ws_produtos = wb.create_sheet("Produtos")
+        # Query produtos - MODIFICADA PARA REMOVER A CONDIÇÃO FARM_ID
         query_produtos = text("""
             SELECT 
-                uva_produto as 'Produto',
-                CASE 
-                    WHEN uva_kg = '5' THEN 'Caixa 5kg'
-                    WHEN uva_kg = '8' THEN 'Caixa 8kg'
-                END as 'Tipo Embalagem'
-            FROM uva
-            ORDER BY uva_produto
+                DISTINCT produto as 'Produto',
+                '5 kg' as 'Tipo Embalagem'
+            FROM vendas_uva
+            WHERE YEAR(data) = :ano
+            ORDER BY produto
         """)
         
-        df_produtos = pd.read_sql(query_produtos, db.engine)
+        df_produtos = pd.read_sql(query_produtos, db.engine, params={'ano': ano})
         
         for r_idx, row in enumerate(dataframe_to_rows(df_produtos, index=False), 1):
             for c_idx, value in enumerate(row, 1):
@@ -4497,6 +4455,119 @@ def get_consolidated_vendas():
             'status': 'error',
             'message': str(e)
         }), 500
+    
+@app.route('/get_valvulas_poda')
+def get_valvulas_poda():
+    try:
+        farm_id = session.get('farm_id')
+        query = text("""
+            SELECT id, valvula, variedade, data_poda, area_hectare
+            FROM valvulas 
+            WHERE farm_id = :farm_id
+            ORDER BY valvula ASC
+        """)
+        
+        result = db.session.execute(query, {'farm_id': farm_id})
+        valvulas = [{
+            'id': row.id,
+            'valvula': row.valvula,
+            'variedade': row.variedade,
+            'data_poda': row.data_poda.isoformat() if row.data_poda else None,
+            'area_hectare': float(row.area_hectare) if row.area_hectare else None
+        } for row in result]
+        
+        return jsonify({
+            'status': 'success',
+            'valvulas': valvulas
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Erro ao buscar válvulas: {str(e)}'
+        }), 400
+
+@app.route('/update_poda_date/<int:id>', methods=['PUT'])
+def update_poda_date(id):
+    try:
+        farm_id = session.get('farm_id')
+        data = request.get_json()
+        data_poda = data.get('data_poda')
+        
+        # Garantir que a data seja tratada como uma data sem fuso horário
+        if data_poda:
+            data_poda_obj = datetime.strptime(data_poda, '%Y-%m-%d').date()
+        else:
+            data_poda_obj = None
+        
+        query = text("""
+            UPDATE valvulas 
+            SET data_poda = :data_poda
+            WHERE id = :id
+            AND farm_id = :farm_id
+        """)
+        
+        db.session.execute(query, {
+            'id': id,
+            'data_poda': data_poda_obj,
+            'farm_id': farm_id
+        })
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Data de poda atualizada com sucesso!'
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Erro ao atualizar data de poda: {str(e)}'
+        }), 400
+
+@app.route('/download_podas_excel')
+def download_podas_excel():
+    try:
+        farm_id = session.get('farm_id')
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Datas de Poda"
+        
+        # Buscar dados
+        query = text("""
+            SELECT 
+                valvula as "Válvula",
+                variedade as "Variedade",
+                DATE_FORMAT(data_poda, '%d/%m/%Y') as "Data da Poda",
+                DATEDIFF(CURRENT_DATE, data_poda) as "DAP",
+                area_hectare as "Área (ha)"
+            FROM valvulas
+            WHERE farm_id = :farm_id
+            ORDER BY valvula
+        """)
+        
+        df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
+        
+        # Converter DataFrame para Excel
+        for r_idx, row in enumerate(dataframe_to_rows(df, index=False), 1):
+            for c_idx, value in enumerate(row, 1):
+                ws.cell(row=r_idx, column=c_idx, value=value)
+        
+        style_excel_worksheet(ws)
+        
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+        
+        return send_file(
+            excel_file,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f"datas_poda_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        )
+    except Exception as e:
+        print(f"Erro ao gerar Excel de podas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

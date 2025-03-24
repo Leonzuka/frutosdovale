@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     initializePage();
     setupEventListeners();
+    loadAllData();
 });
 
 function logError(message, error) {
