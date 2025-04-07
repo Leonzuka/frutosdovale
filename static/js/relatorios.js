@@ -542,7 +542,6 @@ function updateTables(data) {
             <td>${row.valve}</td>
             <td>${formatCurrency(row.laborCost)}</td>
             <td>${formatCurrency(row.inputsCost)}</td>
-            <td>${formatCurrency(row.machineryCost)}</td>
             <td>${formatCurrency(row.totalCost)}</td>
         `;
         tbody.appendChild(tr);

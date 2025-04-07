@@ -506,41 +506,70 @@ function calcularHoras() {
     const meta = parseFloat(document.getElementById('meta').value) || 0;
     const realizado = parseFloat(document.getElementById('realizado').value) || 0;
     const horasInput = document.getElementById('horas');
+    const extraInput = document.getElementById('extra');
 
     // Verificar primeiro se é uma atividade especial
     if (isAtividadeEspecial(atividadeNome)) {
         // Todas as atividades especiais agora terão valor 0 para não descontar
         horasInput.value = '0.00';
+        extraInput.value = '0.00';
         return;
     }
 
     // Tratamento específico para cada tipo de apontamento
+    let horasCalculadas = 0;
+    let valorBonus = 0;
+    
     switch (tipoApontamento) {
         case 'Hora':
             // Para tipo Hora, calcula apenas se houver horas extras
-            const horasExtras = Math.max(0, realizado - 8);
-            horasInput.value = horasExtras.toFixed(2);
+            horasCalculadas = Math.max(0, realizado - 8);
+            
+            // Cálculo do valor monetário para horas
+            if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
+                valorBonus = 5; // R$ 5 para até meia hora
+            } else if (horasCalculadas > 0.5) {
+                valorBonus = Math.floor(horasCalculadas) * 10; // R$ 10 por hora completa
+                if (horasCalculadas % 1 > 0) {
+                    valorBonus += 5; // R$ 5 adicional para fração de hora
+                }
+            }
             break;
 
         case 'Compensado':
             // Para tipo Compensado, calcula horas proporcionais
             if (realizado > 0 && meta > 0) {
                 const proporcao = realizado / meta;
-                const horasCompensadas = 8 * proporcao;
-                horasInput.value = horasCompensadas.toFixed(2);
-            } else {
-                horasInput.value = '0.00';
+                horasCalculadas = 8 * proporcao;
+                
+                // Também calculamos o valor monetário para compensação
+                if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
+                    valorBonus = 5;
+                } else if (horasCalculadas > 0.5) {
+                    valorBonus = Math.floor(horasCalculadas) * 10;
+                    if (horasCalculadas % 1 > 0) {
+                        valorBonus += 5;
+                    }
+                }
             }
             break;
 
         case 'Meta':
             // Para tipo Meta, sempre será 8 horas
-            horasInput.value = '8.00';
+            horasCalculadas = 8;
+            // Não calculamos bônus para tipo Meta
             break;
 
         default:
-            horasInput.value = '0.00';
+            horasCalculadas = 0;
             break;
+    }
+    
+    horasInput.value = horasCalculadas.toFixed(2);
+    
+    // Apenas atualizar o valor extra se for tipo Hora ou Compensado
+    if (tipoApontamento === 'Hora' || tipoApontamento === 'Compensado') {
+        extraInput.value = valorBonus.toFixed(2);
     }
 }
 
@@ -548,9 +577,32 @@ function calcularHorasExtras() {
     const meta = parseFloat(document.getElementById('meta').value) || 8;
     const realizado = parseFloat(document.getElementById('realizado').value) || 0;
     const horasInput = document.getElementById('horas');
+    const extraInput = document.getElementById('extra');
     
+    // Calculando horas extras (parte que já existia)
     const horasExtras = Math.max(0, realizado - meta);
     horasInput.value = horasExtras.toFixed(2);
+    
+    // NOVA PARTE: Calculando o valor monetário das horas extras
+    let valorBonus = 0;
+    
+    if (horasExtras > 0) {
+        // Se tiver menos de meia hora (0.5), valor é 5 reais
+        if (horasExtras <= 0.5) {
+            valorBonus = 5;
+        } else {
+            // Para horas completas: 10 reais cada hora
+            valorBonus = Math.floor(horasExtras) * 10;
+            
+            // Se tiver fração de hora acima de hora inteira, adiciona 5 reais
+            if (horasExtras % 1 > 0) {
+                valorBonus += 5;
+            }
+        }
+    }
+    
+    // Definir o valor no campo extra
+    extraInput.value = valorBonus.toFixed(2);
 }
 
 document.getElementById('tipoApontamento').addEventListener('change', calcularHoras);
@@ -568,6 +620,7 @@ async function registrarApontamento(formData) {
         const valvula = document.getElementById('valvula').value;
         const tipoApontamento = document.getElementById('tipoApontamento').value;
         const hora = parseFloat(document.getElementById('horas').value) || 0;
+        const extraAtual = parseFloat(document.getElementById('extra').value) || 0;
 
         if (!atividade.value || !funcionario || !dataApontamento || !valvula) {
             alert('Por favor, preencha os campos obrigatórios');
@@ -586,7 +639,8 @@ async function registrarApontamento(formData) {
             const extraValue = Math.max(0, (realizado - meta) * valorUnit);
             formData.set('extra', extraValue.toFixed(2));
         } else {
-            formData.set('extra', '0.00');
+            // Usar o valor de extra já calculado para Hora e Compensado
+            formData.set('extra', extraAtual.toFixed(2));
             formData.set('hora', hora.toFixed(2));
         }
 
@@ -883,17 +937,33 @@ function renderizarUltimosRegistros(registros) {
 
         // Define a classe CSS para o extra
         let extraClass = '';
+        
+        // Calcular valor monetário das horas extras
         let extraValue = registro.extra;
+        let horaExtra = parseFloat(registro.hora) || 0;
         
         // Se for atividade "FALTA", mantém o valor negativo
         if (registro.atividade.toUpperCase() === 'FALTA') {
             extraClass = 'negativo';
-        } else {
-            // Para todas as outras atividades, o extra nunca pode ser negativo
-            extraValue = Math.max(0, registro.extra);
-            if (extraValue > 0) {
-                extraClass = 'positivo';
+        } 
+        // Para apontamentos com horas extras, calcular o valor monetário
+        else if (horaExtra > 0) {
+            // Aplicar regra de negócio para horas extras
+            let valorMonetario = 0;
+            if (horaExtra <= 0.5) {
+                valorMonetario = 5; // R$ 5,00 para até meia hora
+            } else {
+                valorMonetario = Math.floor(horaExtra) * 10; // R$ 10,00 por hora completa
+                if (horaExtra % 1 > 0) {
+                    valorMonetario += 5; // Adiciona R$ 5,00 para fração de hora
+                }
             }
+            extraValue = valorMonetario;
+            extraClass = 'positivo';
+        }
+        // Para atividades tipo Meta ou outros casos
+        else if (extraValue > 0) {
+            extraClass = 'positivo';
         }
 
         return `

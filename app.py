@@ -1664,19 +1664,31 @@ def download_resumo_apontamento():
                     WHEN at.atividade NOT IN ('FALTA', 'FOLGA', 'FÉRIAS') 
                     THEN a.data 
                     END) * CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 70
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                         ELSE 0
                     END as salario_base,
-                COALESCE(SUM(a.hora), 0) as horas,
+                SUM(CASE WHEN a.tipo_apontamento IN ('Hora', 'Compensado') THEN a.hora ELSE 0 END) as horas,
                 COALESCE(SUM(a.extra), 0) as extra_total,
                 SUM(CASE WHEN at.atividade = 'FALTA' THEN 1 ELSE 0 END) as total_faltas,
                 (COUNT(DISTINCT CASE 
                     WHEN at.atividade NOT IN ('FALTA', 'FOLGA', 'FÉRIAS') 
                     THEN a.data 
                     END) * CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 70
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                         ELSE 0
-                    END) + COALESCE(SUM(a.extra), 0) as total_periodo
+                    END) + COALESCE(SUM(a.extra), 0) + 
+                    CASE 
+                        WHEN SUM(CASE WHEN a.tipo_apontamento IN ('Hora', 'Compensado') THEN 1 ELSE 0 END) > 0 
+                        THEN COALESCE(SUM(
+                            CASE 
+                                WHEN a.tipo_apontamento IN ('Hora', 'Compensado') AND a.hora <= 0.5 THEN 5
+                                WHEN a.tipo_apontamento IN ('Hora', 'Compensado') AND a.hora > 0.5 THEN 
+                                    10 * FLOOR(a.hora) + CASE WHEN a.hora % 1 > 0 THEN 5 ELSE 0 END
+                                ELSE 0
+                            END
+                        ), 0)
+                        ELSE 0
+                    END as total_periodo
             FROM apontamento a
             JOIN funcionarios f ON a.funcionario_id = f.id
             JOIN atividade at ON a.atividade_id = at.id
@@ -1686,7 +1698,7 @@ def download_resumo_apontamento():
             ORDER BY f.nome
         """)
 
-        # Query para os detalhes individuais - agora inclui tipo_apontamento
+        # Query para os detalhes individuais
         query_detalhes = text("""
             SELECT 
                 f.nome as funcionario,
@@ -1778,9 +1790,9 @@ def download_resumo_apontamento():
                 extra_original = float(row['extra'] or 0)
                 horas_extras = float(row['hora'] or 0)
                 bonus_horas = 0
-                
+
                 # Verificar se o tipo é 'Hora' ou 'Compensado' para adicionar bônus
-                if row['tipo_apontamento'] in ['Hora', 'Compensado'] and horas_extras > 0:
+                if str(row['tipo_apontamento']).strip() in ['Hora', 'Compensado'] and horas_extras > 0:
                     # Calcular o bônus baseado nas horas extras
                     if horas_extras <= 0.5:  # Até 30 minutos
                         bonus_horas = 5
@@ -1788,6 +1800,7 @@ def download_resumo_apontamento():
                         bonus_horas = 10 * int(horas_extras)  # R$10 por hora completa
                         if horas_extras % 1 > 0:  # Se tiver fração de hora
                             bonus_horas += 5  # Adiciona R$5
+                    print(f"Calculando bônus para {row['funcionario']}: {bonus_horas} (tipo: {row['tipo_apontamento']}, horas: {horas_extras})")
                 
                 # Adicionar o bônus ao extra existente
                 extra_total = extra_original + bonus_horas
@@ -2703,7 +2716,7 @@ def get_report_data():
             SELECT 
                 (SELECT COALESCE(SUM(
                     CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                         ELSE 0 
                     END + COALESCE(extra, 0)), 0)
                 FROM apontamento a
@@ -2780,7 +2793,7 @@ def get_report_data():
                         CASE WHEN a.data BETWEEN :start_date AND :end_date 
                         THEN 
                             CASE 
-                                WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                                WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                                 ELSE 0 
                             END + COALESCE(a.extra, 0)
                         ELSE 0 END
@@ -3901,7 +3914,7 @@ def get_consolidated_report_data():
                     a.farm_id,  # Adicionado alias da tabela
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                             ELSE 0 
                         END + COALESCE(a.extra, 0), 0)) as labor_costs
                 FROM apontamento a
@@ -3961,7 +3974,7 @@ def get_consolidated_report_data():
                     a.farm_id,  # Adicionado alias da tabela
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                             ELSE 0 
                         END + COALESCE(a.extra, 0), 0)) as labor_costs
                 FROM apontamento a
@@ -4056,7 +4069,7 @@ def get_consolidated_report_data():
                         CASE WHEN a.data BETWEEN :start_date AND :end_date 
                         THEN 
                             CASE 
-                                WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                                WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                                 ELSE 0 
                             END + COALESCE(a.extra, 0)
                         ELSE 0 END
@@ -4126,7 +4139,7 @@ def get_consolidated_report_data():
                     a.farm_id,
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 70 
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
                             ELSE 0 
                         END + COALESCE(extra, 0), 0)) as labor_costs
                 FROM apontamento a
