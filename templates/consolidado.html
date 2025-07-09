@@ -83,13 +83,6 @@
                     </div>
                 </div>
                 <div class="metric-card">
-                    <i class="fas fa-spray-can"></i>
-                    <div class="metric-info">
-                        <h3>Total Aplicações</h3>
-                        <p id="totalApplications">0</p>
-                    </div>
-                </div>
-                <div class="metric-card">
                     <i class="fas fa-users"></i>
                     <div class="metric-info">
                         <h3>Funcionários Ativos</h3>
@@ -121,7 +114,6 @@
                                 <tr>
                                     <th>Fazenda</th>
                                     <th>Custos</th>
-                                    <th>Aplicações</th>
                                     <th>Funcionários</th>
                                     <th>Combustível</th>
                                     <th>Estoque</th>
@@ -140,10 +132,6 @@
                         <h3>Custos por Fazenda</h3>
                         <canvas id="farmCostsChart"></canvas>
                     </div>
-                    <div class="chart-container">
-                        <h3>Aplicações por Fazenda</h3>
-                        <canvas id="farmApplicationsChart"></canvas>
-                    </div>
                 </div>
             </div>
 
@@ -151,19 +139,6 @@
             <div class="chart-container full-width">
                 <h3>Consumo de Combustível por Fazenda e Máquina</h3>
                 <canvas id="fuelConsumptionChart"></canvas>
-            </div>
-
-            <!-- Status de Aplicações -->
-            <div class="section-title">
-                <h2>Status de Aplicações</h2>
-                <div class="title-bar"></div>
-            </div>
-
-            <div class="aplicacoes-status-container">
-                <!-- Grid de status por tipo de aplicação e fazenda -->
-                <div class="aplicacoes-grid" id="aplicacoesGrid">
-                    <!-- Será preenchido via JavaScript -->
-                </div>
             </div>
 
             <!-- Vendas de Uvas -->

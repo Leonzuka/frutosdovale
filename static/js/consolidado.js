@@ -84,26 +84,6 @@ async function loadAllData() {
             logError('Falha ao carregar dados de estoque:', error);
         }
         
-        // 3. Carregue os dados de aplicações
-        try {
-            const aplicacoesResponse = await fetch(`/get_consolidated_aplicacoes?data_inicial=${startDate}&data_final=${endDate}`);
-            const aplicacoesData = await aplicacoesResponse.json();
-            
-            console.log('Dados de aplicações recebidos:', aplicacoesData);
-            
-            if (aplicacoesData.status === 'success') {
-                updateAplicacoesGrid(aplicacoesData.aplicacoes || []);
-                
-                // Atualizar taxa média de conclusão
-                const avgRate = aplicacoesData.stats?.avg_completion_rate || 0;
-                document.getElementById('avgCompletionRate').textContent = `${avgRate.toFixed(1)}%`;
-            } else {
-                logError('Erro nos dados de aplicações:', aplicacoesData.message);
-            }
-        } catch (error) {
-            logError('Falha ao carregar dados de aplicações:', error);
-        }
-        
         // 4. Carregue os dados de vendas
         try {
             const anoVendas = document.getElementById('anoVendas').value;
@@ -224,7 +204,6 @@ function updateFarmMetricsTable(farms) {
         tr.innerHTML = `
             <td>${farm.nome}</td>
             <td>${formatCurrency(farm.custos || 0)}</td>
-            <td>${farm.aplicacoes || 0}</td>
             <td>${farm.funcionarios || 0}</td>
             <td>${(farm.combustivel || 0).toLocaleString('pt-BR')} L</td>
             <td>${formatCurrency(farm.estoque || 0)}</td>
@@ -295,54 +274,7 @@ function updateFarmCharts(farms) {
             }
         }
     });
-    
-    // Gráfico de aplicações por fazenda
-    const appsCtx = document.getElementById('farmApplicationsChart');
-    if (!appsCtx) {
-        console.error('Elemento #farmApplicationsChart não encontrado');
-        return;
-    }
-    
-    // Destruir gráfico existente se houver
-    if (window.farmApplicationsChart && typeof window.farmApplicationsChart.destroy === 'function') {
-        window.farmApplicationsChart.destroy();
-    }
-    
-    window.farmApplicationsChart = new Chart(appsCtx, {
-        type: 'pie',
-        data: {
-            labels: farms.map(farm => farm.nome),
-            datasets: [{
-                data: farms.map(farm => farm.aplicacoes || 0),
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.6)',
-                    'rgba(16, 185, 129, 0.6)',
-                    'rgba(245, 158, 11, 0.6)'
-                ],
-                borderColor: [
-                    'rgba(59, 130, 246, 1)',
-                    'rgba(16, 185, 129, 1)',
-                    'rgba(245, 158, 11, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.label + ': ' + context.raw.toLocaleString('pt-BR') + ' aplicações';
-                        }
-                    }
-                }
-            }
-        }
-    });
+    ;
 }
 
 function updateFuelConsumptionChart(fuelData) {
@@ -416,123 +348,6 @@ function updateFuelConsumptionChart(fuelData) {
             }
         }
     });
-}
-
-function updateAplicacoesGrid(aplicacoes) {
-    const grid = document.getElementById('aplicacoesGrid');
-    grid.innerHTML = '';
-    
-    // Cabeçalho
-    const headerRow = document.createElement('div');
-    headerRow.className = 'aplicacoes-row';
-    headerRow.innerHTML = `
-        <div class="aplicacoes-cell header-cell">Fazenda</div>
-        <div class="aplicacoes-cell header-cell">Químicos</div>
-        <div class="aplicacoes-cell header-cell">Fertirrigação</div>
-        <div class="aplicacoes-cell header-cell">Foliar</div>
-        <div class="aplicacoes-cell header-cell">Hormonal</div>
-    `;
-    grid.appendChild(headerRow);
-    
-    // Dados para cada fazenda
-    aplicacoes.forEach(farm => {
-        const farmRow = document.createElement('div');
-        farmRow.className = 'aplicacoes-row';
-        
-        farmRow.innerHTML = `
-            <div class="aplicacoes-cell">
-                <div class="farm-name">${farm.farm_name}</div>
-            </div>
-        `;
-        
-        // Adicionar células para cada tipo de aplicação
-        ['QUIMICOS', 'FERTIRRIGACAO', 'FOLIAR', 'HORMONAL'].forEach(tipo => {
-            const appData = farm.tipos.find(t => t.tipo === tipo) || {
-                total_aplicacoes: 0,
-                realizadas: 0,
-                pendentes: 0,
-                taxa_conclusao: 0
-            };
-            
-            const cell = document.createElement('div');
-            cell.className = 'aplicacoes-cell';
-            cell.setAttribute('data-label', getTipoLabel(tipo));
-            
-            cell.innerHTML = `
-                <div class="app-status">
-                    <div class="app-total">${appData.total_aplicacoes} aplicações</div>
-                    <div class="app-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${appData.taxa_conclusao}%"></div>
-                        </div>
-                        <div class="progress-text">${appData.taxa_conclusao.toFixed(0)}%</div>
-                    </div>
-                    <div class="app-details">
-                        <div class="app-completed">${appData.realizadas} concluídas</div>
-                        <div class="app-pending">${appData.pendentes} pendentes</div>
-                    </div>
-                </div>
-            `;
-            
-            farmRow.appendChild(cell);
-        });
-        
-        grid.appendChild(farmRow);
-    });
-    
-    // Linha de Totais
-    const totalRow = document.createElement('div');
-    totalRow.className = 'aplicacoes-row total-row';
-    
-    // Calcular totais
-    const totals = {
-        'QUIMICOS': { total: 0, realizadas: 0, pendentes: 0 },
-        'FERTIRRIGACAO': { total: 0, realizadas: 0, pendentes: 0 },
-        'FOLIAR': { total: 0, realizadas: 0, pendentes: 0 },
-        'HORMONAL': { total: 0, realizadas: 0, pendentes: 0 }
-    };
-    
-    aplicacoes.forEach(farm => {
-        farm.tipos.forEach(appData => {
-            totals[appData.tipo].total += appData.total_aplicacoes;
-            totals[appData.tipo].realizadas += appData.realizadas;
-            totals[appData.tipo].pendentes += appData.pendentes;
-        });
-    });
-    
-    totalRow.innerHTML = `
-        <div class="aplicacoes-cell">
-            <div class="farm-name">TOTAL GERAL</div>
-        </div>
-    `;
-    
-    Object.entries(totals).forEach(([tipo, data]) => {
-        const taxa = data.total > 0 ? (data.realizadas / data.total) * 100 : 0;
-        
-        const cell = document.createElement('div');
-        cell.className = 'aplicacoes-cell';
-        cell.setAttribute('data-label', getTipoLabel(tipo));
-        
-        cell.innerHTML = `
-            <div class="app-status">
-                <div class="app-total">${data.total} aplicações</div>
-                <div class="app-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${taxa}%"></div>
-                    </div>
-                    <div class="progress-text">${taxa.toFixed(0)}%</div>
-                </div>
-                <div class="app-details">
-                    <div class="app-completed">${data.realizadas} concluídas</div>
-                    <div class="app-pending">${data.pendentes} pendentes</div>
-                </div>
-            </div>
-        `;
-        
-        totalRow.appendChild(cell);
-    });
-    
-    grid.appendChild(totalRow);
 }
 
 function getTipoLabel(tipo) {

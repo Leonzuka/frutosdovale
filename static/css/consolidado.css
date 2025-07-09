@@ -36,32 +36,6 @@
     margin-bottom: 1.5rem;
 }
 
-.aplicacoes-status-container {
-    margin-bottom: 2rem;
-}
-
-.aplicacoes-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background: var(--primary-color);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-}
-
-.aplicacoes-row {
-    display: grid;
-    grid-template-columns: 1fr repeat(4, 1fr);
-    gap: 1rem;
-}
-
-.aplicacoes-cell {
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    background: rgba(30, 41, 59, 0.5);
-}
-
 .header-cell {
     background: rgba(59, 130, 246, 0.1);
     color: var(--accent-color);
@@ -138,31 +112,6 @@
     color: var(--accent-color);
 }
 
-/* Responsividade */
-@media (max-width: 1024px) {
-    .farm-metrics-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .aplicacoes-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .header-cell:not(:first-child) {
-        display: none;
-    }
-    
-    .aplicacoes-cell:not(:first-child) {
-        margin-bottom: 0.5rem;
-    }
-    
-    .aplicacoes-cell:not(:first-child)::before {
-        content: attr(data-label);
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        display: block;
-    }
-}
 
 @media (max-width: 768px) {
     .metrics-cards {
@@ -176,19 +125,4 @@
     .table-container {
         min-width: 768px;
     }
-}
-
-/* Tema claro */
-[data-theme="light"] .aplicacoes-cell {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
-
-[data-theme="light"] .header-cell {
-    background: #dbeafe;
-    color: #2563eb;
-}
-
-[data-theme="light"] .progress-bar {
-    background: #e2e8f0;
 }
