@@ -269,15 +269,14 @@ async function loadAllData() {
     const endDate = document.getElementById('endDate').value;
     
     try {
-        const [reportResponse, totalStockResponse, caldaResponse] = await Promise.all([
+        const [reportResponse, totalStockResponse] = await Promise.all([
             fetch(`/get_report_data?startDate=${startDate}&endDate=${endDate}`),
             fetch('/get_total_stock'),
-            fetch('/get_estoque_calda')
+
         ]);
 
         const reportData = await reportResponse.json();
         const totalStockData = await totalStockResponse.json();
-        const caldaData = await caldaResponse.json();
 
         if (reportData.status === 'success') {
             updateMetrics(reportData.metrics);
@@ -293,18 +292,6 @@ async function loadAllData() {
         if (totalStockData.status === 'success') {
             document.getElementById('totalStock').textContent = 
                 formatCurrency(totalStockData.valor_total || 0);
-        }
-
-        if (caldaData.status === 'success') {
-            const estoqueCalda = caldaData.valor_total || 0;
-            document.getElementById('totalCalda').textContent = 
-                formatCurrency(estoqueCalda);
-
-            const estoqueRegular = totalStockData.valor_total || 0;
-            const estoqueTotal = estoqueRegular + estoqueCalda;
-            
-            document.getElementById('estoqueTotal').textContent = 
-                formatCurrency(estoqueTotal);
         }
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
@@ -485,46 +472,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function updateApplicationsChart() {
-    const dataInicial = document.getElementById('startDate').value;
-    const dataFinal = document.getElementById('endDate').value;
-    
-    fetch(`/get_aplicacoes_analytics?data_inicial=${dataInicial}&data_final=${dataFinal}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success' && data.aplicacoes) {
-                data.aplicacoes.forEach(item => {
-                    const taxa = Number(item.taxa_conclusao || 0);
-                    
-                    let prefix;
-                    switch(item.tipo) {
-                        case 'QUIMICOS':
-                            prefix = 'def';
-                            break;
-                        case 'FERTIRRIGACAO':
-                            prefix = 'fert';
-                            break;
-                        case 'FOLIAR':
-                            prefix = 'fol';
-                            break;
-                        case 'HORMONAL':
-                            prefix = 'hor';
-                            break;
-                    }
-                    
-                    if (prefix) {
-                        document.getElementById(`${prefix}Concluidas`).textContent = item.realizadas;
-                        document.getElementById(`${prefix}Pendentes`).textContent = item.pendentes;
-                        document.getElementById(`${prefix}Taxa`).textContent = `${taxa.toFixed(1)}%`;
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao carregar dados de aplicações:', error);
-        });
-}
-
 function updateTables(data) {
     const tbody = document.getElementById('costsTableBody');
     tbody.innerHTML = '';
@@ -700,7 +647,7 @@ async function updateTotalStock() {
         const response = await fetch('/get_total_stock');
         const data = await response.json();
         if (data.status === 'success') {
-            document.getElementById('totalStock').textContent = 
+            document.getElementById('estoqueTotal').textContent = 
                 formatCurrency(data.valor_total || 0);
         }
     } catch (error) {
@@ -744,34 +691,6 @@ async function downloadFile(type) {
     } catch (error) {
         console.error('Erro ao baixar arquivo:', error);
         alert('Erro ao baixar arquivo. Tente novamente.');
-    }
-}
-
-async function updateEstoqueCalda() {
-    try {
-        const response = await fetch('/get_estoque_calda');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            // Atualizar estoque de calda
-            const estoqueCalda = data.valor_total || 0;
-            document.getElementById('totalCalda').textContent = 
-                formatCurrency(estoqueCalda);
-                
-            // Pegar o valor do estoque regular
-            const estoqueRegularText = document.getElementById('totalStock').textContent;
-            const estoqueRegular = parseFloat(estoqueRegularText.replace(/[R$\s.]/g, '').replace(',', '.'));
-            
-            // Calcular e atualizar o total
-            console.log('Estoque Regular:', estoqueRegular);
-            console.log('Estoque Calda:', estoqueCalda);
-            
-            const estoqueTotal = estoqueRegular + estoqueCalda;
-            document.getElementById('estoqueTotal').textContent = 
-                formatCurrency(estoqueTotal);
-        }
-    } catch (error) {
-        console.error('Erro ao buscar valor do estoque de calda:', error);
     }
 }
 

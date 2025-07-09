@@ -880,60 +880,39 @@ def registrar_estoque():
         # Obter farm_id da sessão
         farm_id = session.get('farm_id')
         
-        # Iniciar uma transação
-        with db.session.begin():
-            # Dados básicos que são comuns para entrada e saída
-            data = {
-                'farm_id': farm_id,
-                'data': datetime.strptime(request.form['data'], '%Y-%m-%d').date(),
-                'produto_id': request.form['produto_id'],
-                'quantidade': float(request.form['quantidade']),
-                'tipo_movimento': request.form['tipo_movimento'],
-                'funcionario_id': request.form['funcionario_id'],
-                'valor_unitario': None,
-                'loja_id': None
-            }
-            
-            if data['tipo_movimento'] == 'ENTRADA':
-                # Adiciona os campos específicos para entrada
-                data['loja_id'] = request.form['loja_id']
-                data['valor_unitario'] = float(request.form['valor_unitario'])
-            
-            # Query para registro_estoque
-            query_estoque = text("""
-                INSERT INTO registro_estoque 
-                (farm_id, data, produto_id, quantidade, tipo_movimento, valor_unitario, funcionario_id, loja_id)
-                VALUES 
-                (:farm_id, :data, :produto_id, :quantidade, :tipo_movimento, :valor_unitario, :funcionario_id, :loja_id)
-            """)
-            
-            # Executar a query do registro_estoque
-            db.session.execute(query_estoque, data)
-
-            # Se for SAIDA, criar registro adicional na tabela calda
-            if data['tipo_movimento'] == 'SAIDA':
-                query_calda = text("""
-                    INSERT INTO calda 
-                    (farm_id, data, produto_id, quantidade, tipo_movimento, funcionario_id)
-                    VALUES 
-                    (:farm_id, :data, :produto_id, :quantidade, :tipo_movimento, :funcionario_id, NULL)
-                """)
-
-                dados_calda = {
-                    'farm_id': farm_id,
-                    'data': data['data'],
-                    'produto_id': data['produto_id'],
-                    'quantidade': data['quantidade'],
-                    'tipo_movimento': 'ENTRADA', 
-                    'funcionario_id': data['funcionario_id']
-                }
-                
-                db.session.execute(query_calda, dados_calda)
+        # Dados básicos que são comuns para entrada e saída
+        data = {
+            'farm_id': farm_id,
+            'data': datetime.strptime(request.form['data'], '%Y-%m-%d').date(),
+            'produto_id': request.form['produto_id'],
+            'quantidade': float(request.form['quantidade']),
+            'tipo_movimento': request.form['tipo_movimento'],
+            'funcionario_id': request.form['funcionario_id'],
+            'valor_unitario': None,
+            'loja_id': None
+        }
+        
+        if data['tipo_movimento'] == 'ENTRADA':
+            # Adiciona os campos específicos para entrada
+            data['loja_id'] = request.form['loja_id']
+            data['valor_unitario'] = float(request.form['valor_unitario'])
+        
+        # Query para registro_estoque
+        query_estoque = text("""
+            INSERT INTO registro_estoque 
+            (farm_id, data, produto_id, quantidade, tipo_movimento, valor_unitario, funcionario_id, loja_id)
+            VALUES 
+            (:farm_id, :data, :produto_id, :quantidade, :tipo_movimento, :valor_unitario, :funcionario_id, :loja_id)
+        """)
+        
+        # Executar a query do registro_estoque
+        db.session.execute(query_estoque, data)
+        db.session.commit()
         
         return jsonify({
             'status': 'success',
             'message': 'Movimentação registrada com sucesso!'
-        }), 201
+        }), 200
         
     except Exception as e:
         db.session.rollback()
@@ -1048,133 +1027,6 @@ def download_estoque(tipo):
             
             ws.title = "Resumo do Estoque Galpão"
 
-        elif tipo == 'calda':
-            query = text("""
-                WITH CaldaAtual AS (
-                    SELECT 
-                        c.produto_id,
-                        p.produto,
-                        p.tipo,
-                        p.classificacao,
-                        SUM(CASE 
-                            WHEN c.tipo_movimento = 'ENTRADA' THEN c.quantidade 
-                            WHEN c.tipo_movimento = 'SAIDA' THEN -c.quantidade 
-                            ELSE 0 
-                        END) as saldo_atual
-                    FROM calda c
-                    JOIN produtos p ON c.produto_id = p.id
-                    WHERE p.ativo = 1
-                    AND c.farm_id = :farm_id
-                    GROUP BY c.produto_id, p.produto, p.tipo, p.classificacao
-                ),
-                UltimosPrecos AS (
-                    SELECT 
-                        produto_id,
-                        valor_unitario
-                    FROM registro_estoque re
-                    WHERE tipo_movimento = 'ENTRADA'
-                    AND valor_unitario IS NOT NULL
-                    AND farm_id = :farm_id
-                    AND id = (
-                        SELECT MAX(id)
-                        FROM registro_estoque re2
-                        WHERE re2.produto_id = re.produto_id
-                        AND re2.tipo_movimento = 'ENTRADA'
-                        AND re2.valor_unitario IS NOT NULL
-                        AND re2.farm_id = :farm_id
-                    )
-                )
-                SELECT 
-                    ca.produto as 'Produto',
-                    ca.tipo as 'Tipo',
-                    ca.classificacao as 'Classificação',
-                    ca.saldo_atual as 'Saldo Atual',
-                    COALESCE(up.valor_unitario, 0) as 'Valor Unitário (R$)',
-                    ca.saldo_atual * COALESCE(up.valor_unitario, 0) as 'Valor Total (R$)'
-                FROM CaldaAtual ca
-                LEFT JOIN UltimosPrecos up ON ca.produto_id = up.produto_id
-                ORDER BY ca.produto
-            """)
-            df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
-            ws.title = "Estoque de Calda"
-
-        elif tipo == 'total':
-            query = text("""
-                WITH EstoqueRegular AS (
-                    SELECT 
-                        p.id,
-                        p.produto,
-                        p.tipo,
-                        p.classificacao,
-                        SUM(CASE 
-                            WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade 
-                            WHEN re.tipo_movimento = 'SAIDA' THEN -re.quantidade 
-                            ELSE 0 
-                        END) as saldo_atual,
-                        'Galpão' as tipo_estoque,
-                        COALESCE(
-                            (SELECT valor_unitario 
-                            FROM registro_estoque re2 
-                            WHERE re2.produto_id = p.id 
-                            AND re2.tipo_movimento = 'ENTRADA'
-                            AND re2.valor_unitario IS NOT NULL
-                            AND re2.farm_id = :farm_id
-                            ORDER BY re2.data DESC, re2.id DESC
-                            LIMIT 1),
-                            0
-                        ) as valor_unitario
-                    FROM produtos p
-                    LEFT JOIN registro_estoque re ON p.id = re.produto_id AND re.farm_id = :farm_id
-                    WHERE p.ativo = 1
-                    AND (p.farm_id = :farm_id OR p.farm_id IS NULL)
-                    GROUP BY p.id, p.produto, p.tipo, p.classificacao
-                    HAVING saldo_atual > 0
-                ),
-                EstoqueCalda AS (
-                    SELECT 
-                        p.id,
-                        p.produto,
-                        p.tipo,
-                        p.classificacao,
-                        SUM(CASE 
-                            WHEN c.tipo_movimento = 'ENTRADA' THEN c.quantidade 
-                            WHEN c.tipo_movimento = 'SAIDA' THEN -c.quantidade 
-                            ELSE 0 
-                        END) as saldo_atual,
-                        'Calda' as tipo_estoque,
-                        COALESCE(
-                            (SELECT valor_unitario 
-                            FROM registro_estoque re 
-                            WHERE re.produto_id = p.id 
-                            AND re.tipo_movimento = 'ENTRADA'
-                            AND re.valor_unitario IS NOT NULL
-                            AND re.farm_id = :farm_id
-                            ORDER BY re.data DESC, re.id DESC
-                            LIMIT 1),
-                            0
-                        ) as valor_unitario
-                    FROM produtos p
-                    JOIN calda c ON p.id = c.produto_id AND c.farm_id = :farm_id
-                    WHERE p.ativo = 1
-                    AND (p.farm_id = :farm_id OR p.farm_id IS NULL)
-                    GROUP BY p.id, p.produto, p.tipo, p.classificacao
-                    HAVING saldo_atual > 0
-                )
-                SELECT 
-                    Produto,
-                    Tipo,
-                    Classificacao,
-                    tipo_estoque as 'Tipo de Estoque',
-                    CAST(saldo_atual AS DECIMAL(10,2)) as 'Saldo Atual',
-                    CAST(valor_unitario AS DECIMAL(10,2)) as 'Valor Unitário (R$)',
-                    CAST(saldo_atual * valor_unitario AS DECIMAL(10,2)) as 'Valor Total (R$)'
-                FROM (
-                    SELECT * FROM EstoqueRegular
-                    UNION ALL
-                    SELECT * FROM EstoqueCalda
-                ) as TodosEstoques
-                ORDER BY Produto, tipo_estoque
-            """)
             df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
 
             # Garantir que as colunas numéricas sejam float
@@ -2102,8 +1954,10 @@ def get_ultimas_movimentacoes():
 @app.route('/excluir_movimentacao/<int:id>', methods=['DELETE'])
 def excluir_movimentacao(id):
     try:
-        # Primeiro verificar se o registro existe
-        check_query = text("SELECT id FROM registro_estoque WHERE id = :id")
+        # Verificar se o registro existe
+        check_query = text("""
+            SELECT id FROM registro_estoque WHERE id = :id
+        """)
         result = db.session.execute(check_query, {'id': id}).first()
         
         if not result:
@@ -2111,8 +1965,8 @@ def excluir_movimentacao(id):
                 'status': 'error',
                 'message': 'Registro não encontrado.'
             }), 404
-            
-        # Se existe, proceder com a exclusão
+        
+        # Excluir o registro do estoque
         query = text("DELETE FROM registro_estoque WHERE id = :id")
         db.session.execute(query, {'id': id})
         db.session.commit()
@@ -2867,60 +2721,6 @@ def download_funcionarios_relatório(tipo):
         print(f"Error generating Excel file: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/get_estoque_calda')
-def get_estoque_calda():
-    try:
-        farm_id = session.get('farm_id')
-        query = text("""
-            WITH CaldaAtual AS (
-                SELECT 
-                    produto_id,
-                    SUM(CASE 
-                        WHEN tipo_movimento = 'ENTRADA' THEN quantidade 
-                        WHEN tipo_movimento = 'SAIDA' THEN -quantidade 
-                        ELSE 0 
-                    END) as saldo_atual
-                FROM calda
-                WHERE farm_id = :farm_id  # Adicionar esta linha
-                GROUP BY produto_id
-                HAVING saldo_atual > 0
-            ),
-            UltimosPrecos AS (
-                SELECT 
-                    produto_id,
-                    valor_unitario
-                FROM registro_estoque re
-                WHERE tipo_movimento = 'ENTRADA'
-                AND valor_unitario IS NOT NULL
-                AND farm_id = :farm_id  # Adicionar esta linha
-                AND id = (
-                    SELECT MAX(id)
-                    FROM registro_estoque re2
-                    WHERE re2.produto_id = re.produto_id
-                    AND re2.tipo_movimento = 'ENTRADA'
-                    AND re2.valor_unitario IS NOT NULL
-                    AND re2.farm_id = :farm_id  # Adicionar esta linha
-                )
-            )
-            SELECT COALESCE(SUM(
-                ca.saldo_atual * COALESCE(up.valor_unitario, 0)
-            ), 0) as valor_total
-            FROM CaldaAtual ca
-            LEFT JOIN UltimosPrecos up ON ca.produto_id = up.produto_id
-        """)
-        
-        result = db.session.execute(query, {'farm_id': farm_id}).scalar()
-        
-        return jsonify({
-            'status': 'success',
-            'valor_total': float(result) if result else 0
-        }), 200
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
-
 @app.route('/importar_vendas', methods=['POST'])
 def importar_vendas():
     farm_id = session.get('farm_id')
@@ -3481,21 +3281,6 @@ def get_consolidated_stock():
                 LEFT JOIN registro_estoque re ON p.id = re.produto_id
                 WHERE p.ativo = 1
                 GROUP BY re.farm_id, p.id
-                HAVING saldo_atual > 0
-            ),
-            EstoqueCalda AS (
-                SELECT 
-                    c.farm_id,
-                    p.id,
-                    SUM(CASE 
-                        WHEN c.tipo_movimento = 'ENTRADA' THEN c.quantidade 
-                        WHEN c.tipo_movimento = 'SAIDA' THEN -c.quantidade 
-                        ELSE 0 
-                    END) as saldo_atual
-                FROM produtos p
-                JOIN calda c ON p.id = c.produto_id
-                WHERE p.ativo = 1
-                GROUP BY c.farm_id, p.id
                 HAVING saldo_atual > 0
             ),
             EstoqueTotal AS (
