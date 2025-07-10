@@ -31,6 +31,7 @@
             align-items: center;
             justify-content: center;
             height: 250px;
+            position: relative;
         }
         
         .farm-card:hover {
@@ -67,6 +68,18 @@
             text-align: center;
             color: var(--text-secondary);
             margin-bottom: 2rem;
+        }
+        
+        .coming-soon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
         
         [data-theme="light"] .farm-card {
@@ -126,6 +139,14 @@
                     <h2 class="farm-name">Relatório Consolidado</h2>
                     <p class="farm-description">Visualize dados de todas as fazendas em um só lugar</p>
                 </a>
+
+                <!-- Card Alterar Diária -->
+                <div class="farm-card">
+                    <div class="coming-soon">Em breve</div>
+                    <i class="fas fa-calendar-day farm-icon"></i>
+                    <h2 class="farm-name">Alterar Diária</h2>
+                    <p class="farm-description">Modificação de registros diários</p>
+                </div>
             </div>
         </main>
 

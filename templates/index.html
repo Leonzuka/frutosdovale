@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VINES - Sistema de Gestão</title>
+    <title>Frutos Do Vale- Sistema de Gestão</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,9 +17,9 @@
             <div class="header-content">
                 <div class="header-left">
                     <div class="logo-container">
-                        <img src="{{ url_for('static', filename='images/Vines1.png') }}" alt="Logo Vines" class="logo">
+                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo Frutos" class="logo">
                         <div>
-                            <h1>VINES</h1>
+                            <h1>Frutos Do Vale</h1>
                             <p class="subtitle">Sistema de Gestão</p>
                         </div>
                     </div>
@@ -37,7 +37,7 @@
         <main class="main-content">
             <div class="page-title">
                 <h2>Sistema de Gestão Empresarial</h2>
-                <p class="page-subtitle">Gerencie todas as operações da sua empresa de forma eficiente</p>
+                <p class="page-subtitle">Gerenciamento de todas as operações da sua fazenda</p>
             </div>
 
             <div class="menu-cards">
@@ -47,26 +47,10 @@
                         <div class="card-icon">
                             <i class="fas fa-tractor"></i>
                         </div>
-                        <h2>Gestão de Tratores</h2>
+                        <h2>Tratores</h2>
                     </div>
                     <div class="card-content">
-                        <p>Controle completo de abastecimento e manutenção da frota de veículos</p>
-                    </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                </a>
-
-                <!-- Relatórios -->
-                <a href="{{ url_for('relatorios') }}" class="menu-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h2>Relatórios</h2>
-                    </div>
-                    <div class="card-content">
-                        <p>Análise detalhada de performance e indicadores operacionais</p>
+                        <p>Gestão completa da frota de tratores</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -82,7 +66,7 @@
                         <h2>Funcionários</h2>
                     </div>
                     <div class="card-content">
-                        <p>Gestão completa de colaboradores e dados cadastrais</p>
+                        <p>Cadastro e gestão de funcionários</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -93,12 +77,12 @@
                 <a href="{{ url_for('apontamento') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-clipboard-check"></i>
+                            <i class="fas fa-clipboard-list"></i>
                         </div>
                         <h2>Apontamento</h2>
                     </div>
                     <div class="card-content">
-                        <p>Registro e controle de atividades e produtividade</p>
+                        <p>Registro de atividades e metas</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -109,210 +93,59 @@
                 <a href="{{ url_for('estoque') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-warehouse"></i>
+                            <i class="fas fa-boxes"></i>
                         </div>
                         <h2>Estoque</h2>
                     </div>
                     <div class="card-content">
-                        <p>Controle de inventário e movimentação de produtos</p>
+                        <p>Controle de produtos e insumos</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
 
-                <!-- Aplicação -->
-                <a href="{{ url_for('aplicacoes') }}" class="menu-card">
+                <!-- Relatórios Card -->
+                <a href="{{ url_for('relatorios') }}" class="menu-card active">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-spray-can"></i>
+                            <i class="fas fa-chart-bar"></i>
                         </div>
-                        <h2>Aplicação</h2>
+                        <h2>Relatórios</h2>
                     </div>
                     <div class="card-content">
-                        <p>Gestão de aplicações e tratamentos fitossanitários</p>
+                        <p>Análise completa das operações</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
-
-                <!-- Configuração de Diárias - NOVO -->
-                <div class="menu-card config-card" onclick="openConfigModal()">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-cog"></i>
-                        </div>
-                        <h2>Configurar Diárias</h2>
-                    </div>
-                    <div class="card-content">
-                        <p>Ajustar valores de diária por tipo de funcionário</p>
-                    </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                </div>
-            </div>
+            </div> 
         </main>
 
-        <!-- Modal de Configuração de Diárias -->
-        <div id="configModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Configuração de Diárias</h3>
-                    <button class="close-button" onclick="closeConfigModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>Sistema Frutos Do Vale &copy; <span id="current-year"></span></p>
+                <div class="footer-links">
+                    <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
+                    <a href="#">Documentação</a>
                 </div>
-                
-                <form id="configForm">
-                    <div class="form-group">
-                        <label class="form-label" for="diariaAvulso">
-                            <i class="fas fa-user-tie"></i>
-                            Diária para Funcionários Avulsos
-                        </label>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="color: var(--text-secondary);">R$</span>
-                            <input 
-                                type="number" 
-                                id="diariaAvulso" 
-                                class="form-input" 
-                                value="75.00" 
-                                step="0.01" 
-                                min="0"
-                                placeholder="75.00"
-                            >
-                        </div>
-                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
-                            Valor atual aplicado para funcionários com contrato avulso
-                        </small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="diariaClt">
-                            <i class="fas fa-user-check"></i>
-                            Diária para Funcionários CLT
-                        </label>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="color: var(--text-secondary);">R$</span>
-                            <input 
-                                type="number" 
-                                id="diariaClt" 
-                                class="form-input" 
-                                value="0.00" 
-                                step="0.01" 
-                                min="0"
-                                placeholder="0.00"
-                            >
-                        </div>
-                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
-                            Valor adicional para funcionários CLT (normalmente R$ 0,00)
-                        </small>
-                    </div>
-
-                    <div class="form-buttons">
-                        <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">
-                            <i class="fas fa-times"></i>
-                            Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i>
-                            Salvar Configurações
-                        </button>
-                    </div>
-                </form>
             </div>
-        </div>
+        </footer>
     </div>
 
     <script>
-        // Inicialização da página
+        // Atualiza a data e ano
         document.addEventListener('DOMContentLoaded', function() {
-            // Exibir data atual
             const dateDisplay = document.getElementById('current-date');
-            const today = new Date();
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            dateDisplay.textContent = today.toLocaleDateString('pt-BR', options);
-
-            // Carregar configurações atuais
-            loadCurrentConfig();
-        });
-
-        // Funções do modal
-        function openConfigModal() {
-            document.getElementById('configModal').style.display = 'flex';
-        }
-
-        function closeConfigModal() {
-            document.getElementById('configModal').style.display = 'none';
-        }
-
-        // Fechar modal ao clicar fora
-        document.getElementById('configModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeConfigModal();
-            }
-        });
-
-        // Carregar configurações atuais
-        async function loadCurrentConfig() {
-            try {
-                const response = await fetch('/get_config_diarias');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    document.getElementById('diariaAvulso').value = data.diaria_avulso || 75.00;
-                    document.getElementById('diariaClt').value = data.diaria_clt || 0.00;
-                }
-            } catch (error) {
-                console.error('Erro ao carregar configurações:', error);
-            }
-        }
-
-        // Submeter formulário
-        document.getElementById('configForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+            const yearDisplay = document.getElementById('current-year');
             
-            const diariaAvulso = document.getElementById('diariaAvulso').value;
-            const diariaClt = document.getElementById('diariaClt').value;
-            
-            try {
-                const response = await fetch('/update_config_diarias', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        diaria_avulso: parseFloat(diariaAvulso),
-                        diaria_clt: parseFloat(diariaClt)
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    alert('Configurações salvas com sucesso!');
-                    closeConfigModal();
-                } else {
-                    alert('Erro ao salvar configurações: ' + data.message);
-                }
-            } catch (error) {
-                console.error('Erro ao salvar configurações:', error);
-                alert('Erro ao salvar configurações. Tente novamente.');
-            }
-        });
-
-        // Fechar modal com ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeConfigModal();
-            }
+            const currentDate = new Date();
+            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+            yearDisplay.textContent = currentDate.getFullYear();
         });
     </script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>
