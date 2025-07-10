@@ -3,42 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutos Do Vale N7 - Sistema de Gestão</title>
+    <title>VINES - Sistema de Gestão</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Adiciona Font Awesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="page-container">
-        <!-- Header Section -->
+        <!-- Header Empresarial -->
         <header class="main-header">
             <div class="header-content">
                 <div class="header-left">
                     <div class="logo-container">
-                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo FrutosDoVale" class="logo">
+                        <img src="{{ url_for('static', filename='images/Vines1.png') }}" alt="Logo Vines" class="logo">
+                        <div>
+                            <h1>VINES</h1>
+                            <p class="subtitle">Sistema de Gestão</p>
+                        </div>
                     </div>
-                    <a href="{{ url_for('select_farm') }}" class="select-farm-button">
-                        <i class="fas fa-farm"></i>
-                        Escolher outra Fazenda
-                    </a>
-                </div>
-                <div class="header-center">
-                    <h1>Sistema De Gestão - {{ farm_name }}</h1>
                 </div>
                 <div class="header-right">
                     <div class="date-display">
-                        <i class="far fa-calendar"></i>
+                        <i class="far fa-calendar-alt"></i>
                         <span id="current-date"></span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Conteúdo Principal -->
         <main class="main-content">
+            <div class="page-title">
+                <h2>Sistema de Gestão Empresarial</h2>
+                <p class="page-subtitle">Gerencie todas as operações da sua empresa de forma eficiente</p>
+            </div>
+
             <div class="menu-cards">
-                <!-- Gestão de Tratores Card -->
-                <a href="{{ url_for('tractors') }}" class="menu-card active">
+                <!-- Gestão de Tratores -->
+                <a href="{{ url_for('tractors') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
                             <i class="fas fa-tractor"></i>
@@ -46,31 +50,31 @@
                         <h2>Gestão de Tratores</h2>
                     </div>
                     <div class="card-content">
-                        <p>Controle de abastecimento e manutenção da sua frota</p>
+                        <p>Controle completo de abastecimento e manutenção da frota de veículos</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
 
-                <!-- Relatórios Card -->
-                <a href="{{ url_for('relatorios') }}" class="menu-card active">
+                <!-- Relatórios -->
+                <a href="{{ url_for('relatorios') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-chart-bar"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <h2>Relatórios</h2>
                     </div>
                     <div class="card-content">
-                        <p>Análise completa das operações</p>
+                        <p>Análise detalhada de performance e indicadores operacionais</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
-                
-                <!-- Funcionários Card -->
-                <a href="{{ url_for('funcionarios') }}" class="menu-card active">
+
+                <!-- Funcionários -->
+                <a href="{{ url_for('funcionarios') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
                             <i class="fas fa-users"></i>
@@ -78,69 +82,237 @@
                         <h2>Funcionários</h2>
                     </div>
                     <div class="card-content">
-                        <p>Gestão de funcionários e dados cadastrais</p>
+                        <p>Gestão completa de colaboradores e dados cadastrais</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
 
-                <!-- Apontamento Card -->
-                <a href="{{ url_for('apontamento') }}" class="menu-card active">
+                <!-- Apontamento -->
+                <a href="{{ url_for('apontamento') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-clipboard-list"></i>
+                            <i class="fas fa-clipboard-check"></i>
                         </div>
                         <h2>Apontamento</h2>
                     </div>
                     <div class="card-content">
-                        <p>Registro de atividades e produtividade</p>
+                        <p>Registro e controle de atividades e produtividade</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
 
-                <!-- Estoque Card -->
-                <a href="{{ url_for('estoque') }}" class="menu-card active">
+                <!-- Estoque -->
+                <a href="{{ url_for('estoque') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-box"></i>
+                            <i class="fas fa-warehouse"></i>
                         </div>
                         <h2>Estoque</h2>
                     </div>
                     <div class="card-content">
-                        <p>Controle de estoque e inventário</p>
+                        <p>Controle de inventário e movimentação de produtos</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
-            </div> 
-        </main>    
-        <!-- Footer -->
-        <footer class="main-footer">
-            <div class="footer-content">
-                <p>Sistema Frutos Do Vale &copy; <span id="current-year"></span></p>
-                <div class="footer-links">
-                    <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
-                    <a href="#">Documentação</a>
+
+                <!-- Aplicação -->
+                <a href="{{ url_for('aplicacoes') }}" class="menu-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-spray-can"></i>
+                        </div>
+                        <h2>Aplicação</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Gestão de aplicações e tratamentos fitossanitários</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Configuração de Diárias - NOVO -->
+                <div class="menu-card config-card" onclick="openConfigModal()">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h2>Configurar Diárias</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Ajustar valores de diária por tipo de funcionário</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
                 </div>
             </div>
-        </footer>
+        </main>
+
+        <!-- Modal de Configuração de Diárias -->
+        <div id="configModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Configuração de Diárias</h3>
+                    <button class="close-button" onclick="closeConfigModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="configForm">
+                    <div class="form-group">
+                        <label class="form-label" for="diariaAvulso">
+                            <i class="fas fa-user-tie"></i>
+                            Diária para Funcionários Avulsos
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: var(--text-secondary);">R$</span>
+                            <input 
+                                type="number" 
+                                id="diariaAvulso" 
+                                class="form-input" 
+                                value="75.00" 
+                                step="0.01" 
+                                min="0"
+                                placeholder="75.00"
+                            >
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                            Valor atual aplicado para funcionários com contrato avulso
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="diariaClt">
+                            <i class="fas fa-user-check"></i>
+                            Diária para Funcionários CLT
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: var(--text-secondary);">R$</span>
+                            <input 
+                                type="number" 
+                                id="diariaClt" 
+                                class="form-input" 
+                                value="0.00" 
+                                step="0.01" 
+                                min="0"
+                                placeholder="0.00"
+                            >
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                            Valor adicional para funcionários CLT (normalmente R$ 0,00)
+                        </small>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Configurações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Atualiza a data e ano
+        // Inicialização da página
         document.addEventListener('DOMContentLoaded', function() {
+            // Exibir data atual
             const dateDisplay = document.getElementById('current-date');
-            const yearDisplay = document.getElementById('current-year');
+            const today = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            dateDisplay.textContent = today.toLocaleDateString('pt-BR', options);
+
+            // Carregar configurações atuais
+            loadCurrentConfig();
+        });
+
+        // Funções do modal
+        function openConfigModal() {
+            document.getElementById('configModal').style.display = 'flex';
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').style.display = 'none';
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('configModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfigModal();
+            }
+        });
+
+        // Carregar configurações atuais
+        async function loadCurrentConfig() {
+            try {
+                const response = await fetch('/get_config_diarias');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('diariaAvulso').value = data.diaria_avulso || 75.00;
+                    document.getElementById('diariaClt').value = data.diaria_clt || 0.00;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
+        }
+
+        // Submeter formulário
+        document.getElementById('configForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            const currentDate = new Date();
-            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
-            yearDisplay.textContent = currentDate.getFullYear();
+            const diariaAvulso = document.getElementById('diariaAvulso').value;
+            const diariaClt = document.getElementById('diariaClt').value;
+            
+            try {
+                const response = await fetch('/update_config_diarias', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        diaria_avulso: parseFloat(diariaAvulso),
+                        diaria_clt: parseFloat(diariaClt)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('Configurações salvas com sucesso!');
+                    closeConfigModal();
+                } else {
+                    alert('Erro ao salvar configurações: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erro ao salvar configurações:', error);
+                alert('Erro ao salvar configurações. Tente novamente.');
+            }
+        });
+
+        // Fechar modal com ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeConfigModal();
+            }
         });
     </script>
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>
