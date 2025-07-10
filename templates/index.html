@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutos Do Vale- Sistema de Gestão</title>
+    <title>{{ farm_name }} - Sistema de Gestão</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,13 +14,19 @@
     <div class="page-container">
         <!-- Header Empresarial -->
         <header class="main-header">
+            <div class="back-button-container">
+                <a href="{{ url_for('select_farm') }}" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar para seleção de fazenda
+                </a>
+            </div>
             <div class="header-content">
                 <div class="header-left">
                     <div class="logo-container">
-                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo Frutos" class="logo">
+                        <img src="{{ url_for('static', filename='images/frutos.jpeg') }}" alt="Logo FrutosDoVale" class="logo">
                         <div>
-                            <h1>Frutos Do Vale</h1>
-                            <p class="subtitle">Sistema de Gestão</p>
+                            <h1>Sistema Frutos Do Vale</h1>
+                            <p class="subtitle">{{ farm_name }}</p>
                         </div>
                     </div>
                 </div>
@@ -37,7 +43,7 @@
         <main class="main-content">
             <div class="page-title">
                 <h2>Sistema de Gestão Empresarial</h2>
-                <p class="page-subtitle">Gerenciamento de todas as operações da sua fazenda</p>
+                <p class="page-subtitle">Gerencie todas as operações da sua empresa de forma eficiente</p>
             </div>
 
             <div class="menu-cards">
@@ -47,10 +53,26 @@
                         <div class="card-icon">
                             <i class="fas fa-tractor"></i>
                         </div>
-                        <h2>Tratores</h2>
+                        <h2>Gestão de Tratores</h2>
                     </div>
                     <div class="card-content">
-                        <p>Gestão completa da frota de tratores</p>
+                        <p>Controle completo de abastecimento e manutenção da frota de veículos</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+
+                <!-- Relatórios -->
+                <a href="{{ url_for('relatorios') }}" class="menu-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h2>Relatórios</h2>
+                    </div>
+                    <div class="card-content">
+                        <p>Análise detalhada de performance e indicadores operacionais</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -66,7 +88,7 @@
                         <h2>Funcionários</h2>
                     </div>
                     <div class="card-content">
-                        <p>Cadastro e gestão de funcionários</p>
+                        <p>Gestão completa de colaboradores e dados cadastrais</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -77,12 +99,12 @@
                 <a href="{{ url_for('apontamento') }}" class="menu-card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-clipboard-list"></i>
+                            <i class="fas fa-clipboard-check"></i>
                         </div>
                         <h2>Apontamento</h2>
                     </div>
                     <div class="card-content">
-                        <p>Registro de atividades e metas</p>
+                        <p>Registro de atividades e controle de produtividade</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -95,38 +117,24 @@
                         <div class="card-icon">
                             <i class="fas fa-boxes"></i>
                         </div>
-                        <h2>Estoque</h2>
+                        <h2>Gestão de Estoque</h2>
                     </div>
                     <div class="card-content">
-                        <p>Controle de produtos e insumos</p>
+                        <p>Controle de entrada e saída de produtos e materiais</p>
                     </div>
                     <div class="card-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </a>
 
-                <!-- Relatórios Card -->
-                <a href="{{ url_for('relatorios') }}" class="menu-card active">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <h2>Relatórios</h2>
-                    </div>
-                    <div class="card-content">
-                        <p>Análise completa das operações</p>
-                    </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                </a>
-            </div> 
+
+            </div>
         </main>
 
         <!-- Footer -->
         <footer class="main-footer">
             <div class="footer-content">
-                <p>Sistema Frutos Do Vale &copy; <span id="current-year"></span></p>
+                <p>Sistema VINES &copy; <span id="current-year"></span></p>
                 <div class="footer-links">
                     <a href="javascript:void(0)" onclick="mostrarEmailSuporte()">Suporte</a>
                     <a href="#">Documentação</a>
@@ -145,6 +153,11 @@
             dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
             yearDisplay.textContent = currentDate.getFullYear();
         });
+
+        // Função para mostrar email de suporte
+        function mostrarEmailSuporte() {
+            alert('Entre em contato conosco: suporte@frutosdovale.com');
+        }
     </script>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>

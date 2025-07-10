@@ -1516,7 +1516,7 @@ def download_resumo_apontamento():
                     WHEN at.atividade NOT IN ('FALTA', 'FOLGA', 'FÉRIAS') 
                     THEN a.data 
                     END) * CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                         ELSE 0
                     END as salario_base,
                 SUM(CASE WHEN a.tipo_apontamento IN ('Hora', 'Compensado') THEN a.hora ELSE 0 END) as horas,
@@ -1526,7 +1526,7 @@ def download_resumo_apontamento():
                     WHEN at.atividade NOT IN ('FALTA', 'FOLGA', 'FÉRIAS') 
                     THEN a.data 
                     END) * CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                         ELSE 0
                     END) + COALESCE(SUM(a.extra), 0) + 
                     CASE 
@@ -2183,7 +2183,7 @@ def get_report_data():
             SELECT 
                 (SELECT COALESCE(SUM(
                     CASE 
-                        WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                        WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                         ELSE 0 
                     END + COALESCE(extra, 0)), 0)
                 FROM apontamento a
@@ -2254,7 +2254,7 @@ def get_report_data():
                         CASE WHEN a.data BETWEEN :start_date AND :end_date 
                         THEN 
                             CASE 
-                                WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                                WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                                 ELSE 0 
                             END + COALESCE(a.extra, 0)
                         ELSE 0 END
@@ -2925,7 +2925,7 @@ def get_consolidated_report_data():
                     a.farm_id,  # Adicionado alias da tabela
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                             ELSE 0 
                         END + COALESCE(a.extra, 0), 0)) as labor_costs
                 FROM apontamento a
@@ -2985,7 +2985,7 @@ def get_consolidated_report_data():
                     a.farm_id,  # Adicionado alias da tabela
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                             ELSE 0 
                         END + COALESCE(a.extra, 0), 0)) as labor_costs
                 FROM apontamento a
@@ -3080,7 +3080,7 @@ def get_consolidated_report_data():
                         CASE WHEN a.data BETWEEN :start_date AND :end_date 
                         THEN 
                             CASE 
-                                WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                                WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                                 ELSE 0 
                             END + COALESCE(a.extra, 0)
                         ELSE 0 END
@@ -3150,7 +3150,7 @@ def get_consolidated_report_data():
                     a.farm_id,
                     SUM(COALESCE(
                         CASE 
-                            WHEN f.tipo_contratacao = 'AVULSO' THEN 75
+                            WHEN f.tipo_contratacao = 'AVULSO' THEN 80
                             ELSE 0 
                         END + COALESCE(extra, 0), 0)) as labor_costs
                 FROM apontamento a

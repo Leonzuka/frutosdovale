@@ -496,3 +496,38 @@ body {
 .menu-card:nth-child(5) { animation-delay: 0.5s; }
 .menu-card:nth-child(6) { animation-delay: 0.6s; }
 .menu-card:nth-child(7) { animation-delay: 0.7s; }
+
+/* Estilos para o botão de voltar */
+.back-button-container {
+    max-width: 1200px;
+    margin: 1.5rem auto 0;
+    padding: 0 1rem;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: #1a2234;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    border: 1px solid #2d3748;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.back-button:hover {
+    background: #242d3f;
+    border-color: #3b82f6;
+    transform: translateX(-5px);
+}
+
+.back-button i {
+    font-size: 1rem;
+}
+
+.back-button:hover i {
+    transform: translateX(-3px);
+}
