@@ -531,3 +531,111 @@ body {
 .back-button:hover i {
     transform: translateX(-3px);
 }
+
+/* === CORREÇÃO DO LAYOUT FLEXBOX PARA FOOTER GRUDADO === */
+
+/* Garantir que o page-container use flex corretamente */
+.page-container {
+    min-height: 100vh;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative;
+}
+
+/* Garantir que o main-content ocupe o espaço disponível */
+.main-content {
+    flex: 1 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+/* === FOOTER GRUDADO === */
+.main-footer {
+    background: var(--white) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 1.5rem 0 !important;
+    margin-top: auto !important; /* Isso empurra o footer para baixo */
+    box-shadow: var(--shadow-light) !important;
+}
+
+.footer-content {
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+    padding: 0 2rem !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+.footer-content p {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+}
+
+.footer-links {
+    display: flex !important;
+    gap: 1.5rem !important;
+    align-items: center !important;
+}
+
+.footer-links a {
+    color: var(--text-secondary) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    transition: var(--transition) !important;
+}
+
+.footer-links a:hover {
+    color: var(--primary-blue) !important;
+    background: var(--light-blue) !important;
+}
+
+/* === TEMA ESCURO PARA FOOTER === */
+[data-theme="dark"] .main-footer {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+[data-theme="dark"] .footer-content p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .footer-links a {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .footer-links a:hover {
+    color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* === RESPONSIVIDADE DO FOOTER === */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column !important;
+        gap: 1rem !important;
+        text-align: center !important;
+        padding: 0 1rem !important;
+    }
+    
+    .footer-links {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 1rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-footer {
+        padding: 1rem 0 !important;
+    }
+    
+    .footer-links a {
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.875rem !important;
+    }
+}
