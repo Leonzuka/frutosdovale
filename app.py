@@ -2235,7 +2235,7 @@ def get_report_data():
                 JOIN funcionarios f ON a.funcionario_id = f.id
                 WHERE data BETWEEN :start_date AND :end_date
                 AND v.id != 33
-                AND a.farm_id = :farm_id) as labor_costs  # Adicionar farm_id
+                AND a.farm_id = :farm_id) as labor_costs 
             ),
             FuelData AS (
                 SELECT 
