@@ -45,7 +45,7 @@ function initializePage() {
             // Se o clique não foi no botão, executa a ação do card
             if (!e.target.closest('.card-button')) {
                 if (card.id === 'registroCard') {
-                    showForm();
+                    showModal('registroModal'); // ← MUDANÇA: usar showModal em vez de showForm()
                 } else if (card.id === 'downloadCard') {
                     showModal('downloadModal');
                 } else if (card.id === 'addAtividadeCard') {
@@ -744,8 +744,7 @@ async function desativarAtividade(id) {
 
 // Funções de utilidade
 function showForm() {
-    const formContainer = document.getElementById('apontamentoForm');
-    formContainer.style.display = 'flex';
+    showModal('registroModal');
 }
 
 // Funções para download de planilhas

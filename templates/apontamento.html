@@ -120,86 +120,90 @@
             </div>
         </div>
 
-        <div class="apontamento-form" id="apontamentoForm" style="display: none;">
-            <form id="registroApontamentoForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="funcionario">Funcionário:</label>
-                        <select id="funcionario" name="funcionario_id" required>
-                            <option value="">Selecione o funcionário</option>
-                        </select>
+        <!-- Modal de Registro de Apontamento -->
+        <div id="registroModal" class="modal">
+            <div class="modal-content">
+                <h3>Registrar Apontamento</h3>
+                <form id="registroApontamentoForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="funcionario">Funcionário:</label>
+                            <select id="funcionario" name="funcionario_id" required>
+                                <option value="">Selecione o funcionário</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="data">Data:</label>
+                            <input type="date" id="data" name="data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipoApontamento">Tipo:</label>
+                            <select id="tipoApontamento" name="tipo_apontamento">
+                                <option value="Meta">Meta</option>
+                                <option value="Hora">Hora</option>
+                                <option value="Compensado">Compensado (Hora)</option>
+                            </select>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="data">Data:</label>
-                        <input type="date" id="data" name="data" required>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="atividade">Atividade:</label>
+                            <select id="atividade" name="atividade_id" required>
+                                <option value="">Selecione a atividade</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="valvula">Válvula:</label>
+                            <select id="valvula" name="valvula">
+                                <option value="">Selecione a válvula</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="tipoApontamento">Tipo:</label>
-                        <select id="tipoApontamento" name="tipo_apontamento">
-                            <option value="Meta">Meta</option>
-                            <option value="Hora">Hora</option>
-                            <option value="Compensado">Compensado (Hora)</option>
-                        </select>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="meta">Meta:</label>
+                            <input type="number" id="meta" name="meta" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="realizado">Realizado:</label>
+                            <input type="number" id="realizado" name="realizado" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group" id="valorUnitGroup">
+                            <label for="valorUnit">Valor Unitário:</label>
+                            <input type="number" id="valorUnit" name="valor_unit" step="0.01" required>
+                        </div>
                     </div>
-                </div>
-    
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="atividade">Atividade:</label>
-                        <select id="atividade" name="atividade_id" required>
-                            <option value="">Selecione a atividade</option>
-                        </select>
+
+                    <div class="form-row">
+                        <div class="form-group" id="extraGroup">
+                            <label for="extra">Extra Calculado:</label>
+                            <input type="decimal" id="extra" name="extra">
+                        </div>
+                        <div class="form-group">
+                            <label for="horas">Horas:</label>
+                            <input type="number" id="horas" name="hora" step="0.01">
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="valvula">Válvula:</label>
-                        <select id="valvula" name="valvula">
-                            <option value="">Selecione a válvula</option>
-                        </select>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="observacao">Observação:</label>
+                            <textarea id="observacao" name="observacao" rows="3"></textarea>
+                        </div>
                     </div>
-                </div>
-    
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="meta">Meta:</label>
-                        <input type="number" id="meta" name="meta" step="0.01" required>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Registrar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('registroModal')">Cancelar</button>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="realizado">Realizado:</label>
-                        <input type="number" id="realizado" name="realizado" step="0.01" required>
-                    </div>
-                    
-                    <div class="form-group" id="valorUnitGroup">
-                        <label for="valorUnit">Valor Unitário:</label>
-                        <input type="number" id="valorUnit" name="valor_unit" step="0.01" required>
-                    </div>
-                </div>
-    
-                <div class="form-row">
-                    <div class="form-group" id="extraGroup">
-                        <label for="extra">Extra Calculado:</label>
-                        <input type="decimal" id="extra" name="extra">
-                    </div>
-                    <div class="form-group">
-                        <label for="horas">Horas:</label>
-                        <input type="number" id="horas" name="hora" step="0.01">
-                    </div>
-                </div>
-    
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="observacao">Observação:</label>
-                        <textarea id="observacao" name="observacao" rows="3"></textarea>
-                    </div>
-                </div>
-    
-                <div class="form-buttons">
-                    <button type="submit" class="btn-primary">Registrar</button>
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('apontamentoForm').style.display='none'">Cancelar</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
 
         <div class="ultimos-registros">
