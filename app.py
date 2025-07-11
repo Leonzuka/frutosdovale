@@ -3674,7 +3674,6 @@ def get_estatisticas_estoque():
             },
             'valor_total_estoque': float(result_valor.valor_total_estoque or 0),
             'total_lojas': result_lojas.total_lojas or 0,
-            'produtos_alerta': 0  # Implementar lógica de alerta conforme necessário
         }
         
         return jsonify({

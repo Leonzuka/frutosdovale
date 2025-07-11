@@ -140,12 +140,6 @@ async function carregarEstatisticas() {
                 });
             }
             
-            // Atualizar produtos em alerta
-            const produtosAlertaEl = document.getElementById('produtos-alerta');
-            if (produtosAlertaEl) {
-                produtosAlertaEl.textContent = stats.produtos_alerta || 0;
-            }
-            
             // Atualizar mini stats dos cards (entradas e saídas hoje)
             const entradasHojeEl = document.getElementById('entradas-hoje');
             if (entradasHojeEl) {
@@ -261,7 +255,6 @@ function setDefaultStatValues() {
         { id: 'total-produtos', valor: '0' },
         { id: 'total-movimentacoes', valor: '0' },
         { id: 'valor-total', valor: 'R$ 0,00' },
-        { id: 'produtos-alerta', valor: '0' },
         { id: 'entradas-hoje', valor: '0' },
         { id: 'saidas-hoje', valor: '0' }
     ];

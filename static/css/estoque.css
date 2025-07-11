@@ -83,26 +83,6 @@
     border: 1px solid #e2e8f0;
 }
 
-.theme-toggle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #64748b;
-}
-
-.theme-toggle:hover {
-    background: #f8fafc;
-    border-color: var(--estoque-primary);
-    color: var(--estoque-primary);
-}
-
 /* ===== DASHBOARD DE ESTATÍSTICAS ===== */
 .stats-dashboard {
     background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
@@ -151,12 +131,10 @@
 .produtos-stat::before { background: var(--gradient-success); }
 .movimentacoes-stat::before { background: var(--gradient-info); }
 .valor-stat::before { background: var(--gradient-warning); }
-.alerta-stat::before { background: var(--gradient-danger); }
 
 .produtos-stat:hover::before { opacity: 1; }
 .movimentacoes-stat:hover::before { opacity: 1; }
 .valor-stat:hover::before { opacity: 1; }
-.alerta-stat:hover::before { opacity: 1; }
 
 .stat-icon {
     width: 3rem;
@@ -172,7 +150,6 @@
 .produtos-stat .stat-icon { background: var(--gradient-success); }
 .movimentacoes-stat .stat-icon { background: var(--gradient-info); }
 .valor-stat .stat-icon { background: var(--gradient-warning); }
-.alerta-stat .stat-icon { background: var(--gradient-danger); }
 
 .stat-content h3 {
     font-size: 1.75rem;
