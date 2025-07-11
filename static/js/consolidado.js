@@ -62,9 +62,18 @@ async function loadAllData() {
                 updateKPIs(reportData.kpis || {});
             } else {
                 logError('Erro nos dados do relatório:', reportData.message);
+                // Definir valores padrão em caso de erro
+                updateMetrics({totalCosts: 0, totalApplications: 0, totalEmployees: 0, avgEfficiency: 0});
+                updateFarmMetricsTable([]);
+                updateFarmCharts([]);
+                updateFuelConsumptionChart([]);
+                updateCostsTable([]);
+                updateKPIs({avgCostPerHectare: 0, avgFuelConsumption: 0, totalArea: 0, totalFuel: 0});
             }
         } catch (error) {
             logError('Falha ao carregar dados do relatório:', error);
+            // Definir valores padrão em caso de erro
+            updateMetrics({totalCosts: 0, totalApplications: 0, totalEmployees: 0, avgEfficiency: 0});
         }
         
         // 2. Carregue os dados de estoque
@@ -79,12 +88,14 @@ async function loadAllData() {
                     formatCurrency(stockData.valor_total || 0);
             } else {
                 logError('Erro nos dados de estoque:', stockData.message);
+                document.getElementById('totalStock').textContent = formatCurrency(0);
             }
         } catch (error) {
             logError('Falha ao carregar dados de estoque:', error);
+            document.getElementById('totalStock').textContent = formatCurrency(0);
         }
         
-        // 4. Carregue os dados de vendas
+        // 3. Carregue os dados de vendas
         try {
             const anoVendas = document.getElementById('anoVendas').value;
             const vendasResponse = await fetch(`/get_consolidated_vendas?ano=${anoVendas}`);
@@ -101,14 +112,24 @@ async function loadAllData() {
                 document.getElementById('avgGrapePrice').textContent = formatCurrency(avgPrice);
             } else {
                 logError('Erro nos dados de vendas:', vendasData.message);
+                // Valores padrão para vendas
+                updateVendasUvasChart({vendas_por_mes: [], vendas_por_fazenda: []});
+                updateVendasTable([]);
+                document.getElementById('avgGrapePrice').textContent = formatCurrency(0);
             }
         } catch (error) {
             logError('Falha ao carregar dados de vendas:', error);
+            // Valores padrão para vendas
+            updateVendasUvasChart({vendas_por_mes: [], vendas_por_fazenda: []});
+            updateVendasTable([]);
+            document.getElementById('avgGrapePrice').textContent = formatCurrency(0);
         }
         
         showMessage('Dados carregados com sucesso!', false);
+        
     } catch (error) {
-        logError('Erro geral ao carregar dados:', error);
+        console.error('Erro geral ao carregar dados:', error);
+        showMessage('Erro ao carregar dados do relatório', true);
     }
 }
 
