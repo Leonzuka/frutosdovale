@@ -160,20 +160,42 @@ def style_excel_worksheet(ws):
 def register_abastecimento():
     try:
         farm_id = session.get('farm_id')
+        tipo_trator = request.form['tipoTrator']
+        
+        # PRIMEIRO: Buscar o maquina_id baseado no tipo_trator
+        query_maquina = text("""
+            SELECT id FROM maquinas 
+            WHERE nome = :nome AND farm_id = :farm_id
+        """)
+        
+        result = db.session.execute(query_maquina, {
+            'nome': tipo_trator, 
+            'farm_id': farm_id
+        }).fetchone()
+        
+        if not result:
+            return jsonify({
+                'status': 'error',
+                'message': f'Máquina "{tipo_trator}" não encontrada para esta fazenda!'
+            }), 400
+            
+        maquina_id = result[0]
+        
+        # SEGUNDO: Inserir o abastecimento com maquina_id
         query = text("""
-            INSERT INTO abastecimento (farm_id, data, combustivel, tipo_trator, quantidade, horimetro)
-            VALUES (:farm_id, :data, :combustivel, :tipo_trator, :quantidade, :horimetro)
+            INSERT INTO abastecimento (farm_id, maquina_id, data, combustivel, tipo_trator, quantidade, horimetro)
+            VALUES (:farm_id, :maquina_id, :data, :combustivel, :tipo_trator, :quantidade, :horimetro)
         """)
         
         # Preparar os dados
         quantidade = float(request.form['quantidade'])
-        tipo_trator = request.form['tipoTrator']
         
         if tipo_trator != 'POSTO DE COMBUSTÍVEL':
             quantidade = -quantidade
             
         data = {
-            'farm_id': farm_id, 
+            'farm_id': farm_id,
+            'maquina_id': maquina_id,  # ADICIONADO
             'data': datetime.strptime(request.form['data'], '%Y-%m-%d').date(),
             'combustivel': request.form['combustivel'],
             'tipo_trator': tipo_trator,
