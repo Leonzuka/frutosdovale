@@ -209,12 +209,35 @@
     border-radius: 0.75rem;
     border: 1px solid var(--border-color, #e2e8f0);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* CORREÇÃO DO PROBLEMA: */
+    height: 400px; /* Altura fixa para evitar crescimento infinito */
+    min-height: 400px; /* Altura mínima */
+    max-height: 500px; /* Altura máxima */
+    position: relative; /* Para posicionamento do canvas */
+    overflow: hidden; /* Evita transbordamento */
 }
 
 .chart-container h3 {
     color: var(--text-primary, #1e293b);
     margin-bottom: 1rem;
     font-size: 1.1rem;
+    position: absolute; /* Tira o título do fluxo normal */
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 10;
+}
+
+/* NOVO: Container interno para o canvas */
+.chart-container canvas {
+    position: absolute !important;
+    top: 3.5rem !important; /* Espaço para o título */
+    left: 1.5rem !important;
+    right: 1.5rem !important;
+    bottom: 1.5rem !important;
+    width: calc(100% - 3rem) !important; /* Largura fixa */
+    height: calc(100% - 5rem) !important; /* Altura fixa */
+    max-width: calc(100% - 3rem) !important;
+    max-height: calc(100% - 5rem) !important;
 }
 
 /* Responsividade */

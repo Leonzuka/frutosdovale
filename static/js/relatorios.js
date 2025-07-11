@@ -3,6 +3,30 @@ let chartsInstances = {};
 let currentPeriod = 30; // Período padrão: 30 dias
 let isLoading = false;
 
+// ===== LIMPEZA DE GRÁFICOS =====
+function destroyAllCharts() {
+    console.log('Destruindo todos os gráficos existentes...');
+    
+    // Destruir gráficos armazenados em chartsInstances
+    Object.keys(chartsInstances).forEach(key => {
+        if (chartsInstances[key] && typeof chartsInstances[key].destroy === 'function') {
+            chartsInstances[key].destroy();
+            delete chartsInstances[key];
+        }
+    });
+    
+    // Limpar qualquer canvas restante
+    const canvases = document.querySelectorAll('canvas');
+    canvases.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    });
+    
+    console.log('Gráficos destruídos com sucesso');
+}
+
 // ===== INICIALIZAÇÃO DA PÁGINA =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Inicializando página de relatórios...');
@@ -113,9 +137,12 @@ async function refreshAllData() {
         isLoading = true;
         showLoadingState();
         
+        // IMPORTANTE: Destruir gráficos antes de recriar
+        destroyAllCharts();
+        
         await Promise.all([
             loadMetrics(),
-            updateCharts(),
+            loadChartData(), // ← MUDANÇA: usar loadChartData em vez de updateCharts
             loadRecentActivities()
         ]);
         
@@ -295,7 +322,16 @@ async function loadChartData() {
 
 async function createCostsChart() {
     const ctx = document.getElementById('costsChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.log('Canvas costsChart não encontrado');
+        return;
+    }
+    
+    // SEGURANÇA: Verificar se já existe um gráfico neste canvas
+    if (chartsInstances.costsChart) {
+        chartsInstances.costsChart.destroy();
+        delete chartsInstances.costsChart;
+    }
     
     try {
         // Buscar dados de apontamentos dos últimos dias
@@ -546,19 +582,6 @@ async function createTractorsChart() {
     }
 }
 
-async function updateCharts() {
-    try {
-        await Promise.all([
-            createCostsChart(),
-            createFuelChart(),
-            createEmployeesChart(),
-            createTractorsChart()
-        ]);
-    } catch (error) {
-        console.error('Erro ao atualizar gráficos:', error);
-    }
-}
-
 // ===== TABELA DE ATIVIDADES RECENTES =====
 async function loadRecentActivities() {
     try {
@@ -698,12 +721,12 @@ async function handleVendasExcelDownload() {
 
 // ===== FILTRAGEM =====
 function filterDataByType(type) {
-    // Implementar filtragem por tipo se necessário
     console.log('Filtrar por tipo:', type);
     
     if (type === 'todos') {
-        // Mostrar todos os dados
-        refreshAllData();
+        // MUDANÇA: usar loadChartData em vez de refreshAllData para evitar loop
+        destroyAllCharts();
+        loadChartData();
     } else {
         // Filtrar dados específicos
         // Implementar conforme necessário
