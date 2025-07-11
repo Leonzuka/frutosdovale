@@ -775,37 +775,59 @@ def estoque():
     
     return render_template('estoque.html', farm_id=farm_id)
 
-@app.route('/get_produtos', methods=['GET'])
+@app.route('/get_produtos')
 def get_produtos():
+    """Rota melhorada para incluir mais informações dos produtos"""
     try:
-        # Obter farm_id da sessão
         farm_id = session.get('farm_id')
         
         query = text("""
-            SELECT id, produto as nome, tipo, classificacao
-            FROM produtos
-            WHERE ativo = 1
-            AND (farm_id = :farm_id OR farm_id IS NULL)
-            ORDER BY produto ASC
+            SELECT 
+                id, 
+                produto, 
+                unidade, 
+                ativo, 
+                classificacao,
+                COALESCE(
+                    (SELECT SUM(
+                        CASE 
+                            WHEN tipo_movimento = 'ENTRADA' THEN quantidade
+                            WHEN tipo_movimento = 'SAIDA' THEN -quantidade
+                            ELSE 0
+                        END
+                    ) FROM registro_estoque 
+                    WHERE produto_id = p.id AND farm_id = :farm_id), 0
+                ) as estoque_atual
+            FROM produtos p 
+            WHERE farm_id = :farm_id 
+            ORDER BY produto
         """)
-
+        
         result = db.session.execute(query, {'farm_id': farm_id})
-        produtos = [{
-            'id': row[0],
-            'nome': row[1],
-            'tipo': row[2],
-            'classificacao': row[3]
-        } for row in result]
-
+        produtos = result.fetchall()
+        
+        produtos_list = []
+        for produto in produtos:
+            produtos_list.append({
+                'id': produto.id,
+                'produto': produto.produto,
+                'unidade': produto.unidade,
+                'ativo': produto.ativo,
+                'classificacao': produto.classificacao,
+                'estoque_atual': float(produto.estoque_atual or 0)
+            })
+        
         return jsonify({
             'status': 'success',
-            'produtos': produtos
-        }), 200
+            'produtos': produtos_list
+        })
+        
     except Exception as e:
+        print(f"Erro ao carregar produtos: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': f'Erro ao buscar produtos: {str(e)}'
-        }), 400
+            'message': 'Erro ao carregar produtos'
+        })
 
 @app.route('/get_lojas', methods=['GET'])
 def get_lojas():
@@ -3466,6 +3488,206 @@ def download_podas_excel():
     except Exception as e:
         print(f"Erro ao gerar Excel de podas: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/get_movimentacoes')
+def get_movimentacoes():
+    """Obter movimentações filtradas por data"""
+    try:
+        farm_id = session.get('farm_id')
+        data_filtro = request.args.get('data')
+        
+        query_base = """
+            SELECT 
+                re.id,
+                re.data,
+                re.tipo_movimento,
+                re.quantidade,
+                re.valor_unitario,
+                p.produto as produto_nome,
+                p.unidade,
+                f.nome as funcionario_nome,
+                l.loja as loja_nome
+            FROM registro_estoque re
+            JOIN produtos p ON re.produto_id = p.id
+            JOIN funcionarios f ON re.funcionario_id = f.id
+            LEFT JOIN lojas l ON re.loja_id = l.id
+            WHERE re.farm_id = :farm_id
+        """
+        
+        params = {'farm_id': farm_id}
+        
+        if data_filtro:
+            query_base += " AND DATE(re.data) = :data_filtro"
+            params['data_filtro'] = data_filtro
+        
+        query_base += " ORDER BY re.data DESC"
+        
+        query = text(query_base)
+        result = db.session.execute(query, params)
+        movimentacoes = result.fetchall()
+        
+        movimentacoes_list = []
+        for mov in movimentacoes:
+            movimentacoes_list.append({
+                'id': mov.id,
+                'data': mov.data.isoformat() if mov.data else None,
+                'tipo_movimento': mov.tipo_movimento,
+                'quantidade': float(mov.quantidade),
+                'valor_unitario': float(mov.valor_unitario),
+                'produto_nome': mov.produto_nome,
+                'unidade': mov.unidade,
+                'funcionario_nome': mov.funcionario_nome,
+                'loja_nome': mov.loja_nome
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'movimentacoes': movimentacoes_list
+        })
+        
+    except Exception as e:
+        print(f"Erro ao obter movimentações: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Erro ao obter movimentações',
+            'movimentacoes': []
+        })
+
+@app.route('/get_movimentacoes_recentes')
+def get_movimentacoes_recentes():
+    """Obter as movimentações mais recentes para o dashboard"""
+    try:
+        farm_id = session.get('farm_id')
+        
+        query = text("""
+            SELECT 
+                re.id,
+                re.data,
+                re.tipo_movimento,
+                re.quantidade,
+                re.valor_unitario,
+                p.produto as produto_nome,
+                p.unidade,
+                f.nome as funcionario_nome
+            FROM registro_estoque re
+            JOIN produtos p ON re.produto_id = p.id
+            JOIN funcionarios f ON re.funcionario_id = f.id
+            WHERE re.farm_id = :farm_id
+            ORDER BY re.data DESC
+            LIMIT 10
+        """)
+        
+        result = db.session.execute(query, {'farm_id': farm_id})
+        movimentacoes = result.fetchall()
+        
+        movimentacoes_list = []
+        for mov in movimentacoes:
+            movimentacoes_list.append({
+                'id': mov.id,
+                'data': mov.data.isoformat() if mov.data else None,
+                'tipo_movimento': mov.tipo_movimento,
+                'quantidade': float(mov.quantidade),
+                'valor_unitario': float(mov.valor_unitario),
+                'produto_nome': mov.produto_nome,
+                'unidade': mov.unidade,
+                'funcionario_nome': mov.funcionario_nome
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'movimentacoes': movimentacoes_list
+        })
+        
+    except Exception as e:
+        print(f"Erro ao obter movimentações recentes: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Erro ao obter movimentações recentes',
+            'movimentacoes': []
+        })
+
+@app.route('/get_estatisticas_estoque')
+def get_estatisticas_estoque():
+    """Obter estatísticas completas do estoque para o dashboard"""
+    try:
+        farm_id = session.get('farm_id')
+        hoje = datetime.now().date()
+        
+        # Estatísticas de produtos
+        query_produtos = text("""
+            SELECT 
+                COUNT(*) as total_produtos,
+                SUM(CASE WHEN ativo = 1 THEN 1 ELSE 0 END) as produtos_ativos,
+                SUM(CASE WHEN ativo = 0 THEN 1 ELSE 0 END) as produtos_inativos
+            FROM produtos 
+            WHERE farm_id = :farm_id
+        """)
+        
+        result_produtos = db.session.execute(query_produtos, {'farm_id': farm_id}).fetchone()
+        
+        # Movimentações de hoje
+        query_movimentacoes_hoje = text("""
+            SELECT 
+                COUNT(*) as total_movimentacoes,
+                SUM(CASE WHEN tipo_movimento = 'ENTRADA' THEN 1 ELSE 0 END) as entradas,
+                SUM(CASE WHEN tipo_movimento = 'SAIDA' THEN 1 ELSE 0 END) as saidas
+            FROM registro_estoque 
+            WHERE farm_id = :farm_id AND DATE(data) = :hoje
+        """)
+        
+        result_mov_hoje = db.session.execute(query_movimentacoes_hoje, {
+            'farm_id': farm_id, 
+            'hoje': hoje
+        }).fetchone()
+        
+        # Valor total do estoque (estimativa)
+        query_valor = text("""
+            SELECT 
+                COALESCE(SUM(
+                    CASE 
+                        WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade * re.valor_unitario
+                        WHEN re.tipo_movimento = 'SAIDA' THEN -(re.quantidade * re.valor_unitario)
+                        ELSE 0
+                    END
+                ), 0) as valor_total_estoque
+            FROM registro_estoque re
+            JOIN produtos p ON re.produto_id = p.id
+            WHERE re.farm_id = :farm_id AND p.ativo = 1
+        """)
+        
+        result_valor = db.session.execute(query_valor, {'farm_id': farm_id}).fetchone()
+        
+        # Contagem de lojas
+        query_lojas = text("SELECT COUNT(*) as total_lojas FROM lojas")
+        result_lojas = db.session.execute(query_lojas).fetchone()
+        
+        estatisticas = {
+            'produtos': {
+                'total': result_produtos.total_produtos or 0,
+                'ativos': result_produtos.produtos_ativos or 0,
+                'inativos': result_produtos.produtos_inativos or 0
+            },
+            'movimentacoes_hoje': {
+                'total': result_mov_hoje.total_movimentacoes or 0,
+                'entradas': result_mov_hoje.entradas or 0,
+                'saidas': result_mov_hoje.saidas or 0
+            },
+            'valor_total_estoque': float(result_valor.valor_total_estoque or 0),
+            'total_lojas': result_lojas.total_lojas or 0,
+            'produtos_alerta': 0  # Implementar lógica de alerta conforme necessário
+        }
+        
+        return jsonify({
+            'status': 'success',
+            'estatisticas': estatisticas
+        })
+        
+    except Exception as e:
+        print(f"Erro ao obter estatísticas do estoque: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Erro ao obter estatísticas do estoque'
+        })
     
 if __name__ == '__main__':
     app.run(debug=True)

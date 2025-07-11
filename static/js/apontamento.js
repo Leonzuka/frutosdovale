@@ -1,13 +1,23 @@
 // Inicialização quando a página carrega
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', initializeEstoque);
+
+// Função de inicialização melhorada
+function initializeEstoque() {
     initializePage();
     carregarDados();
-    setupFormHandlers();
-    setupModalHandlers(); 
-    carregarUltimosApontamentos(1); 
-    setupPaginationHandlers();
-    carregarAtividadesLote()
-});
+    carregarEstatisticas();
+    carregarMovimentacoesRecentes();
+    mostrarClassificacaoProduto();
+    animarCards();
+    adicionarInteratividadeCards();
+    iniciarAtualizacaoAutomatica();
+    
+    // Definir data atual
+    const dataInput = document.getElementById('data');
+    if (dataInput) {
+        dataInput.valueAsDate = new Date();
+    }
+}
 
 let currentPage = 1;
 let totalPages = 1;
@@ -98,6 +108,200 @@ function initializePage() {
     setupPaginationHandlers();
 }
 
+// Carregar estatísticas do dashboard
+async function carregarEstatisticas() {
+    try {
+        // Carregar total de produtos ativos
+        const produtosResponse = await fetch('/get_produtos');
+        const produtosData = await produtosResponse.json();
+        
+        if (produtosData.status === 'success') {
+            const totalProdutos = produtosData.produtos.length;
+            const produtosAtivos = produtosData.produtos.filter(p => p.ativo === 1).length;
+            const produtosInativos = totalProdutos - produtosAtivos;
+            
+            document.getElementById('total-produtos').textContent = produtosAtivos;
+            document.getElementById('inativos-count').textContent = produtosInativos;
+        }
+        
+        // Carregar movimentações de hoje
+        const hoje = new Date().toISOString().split('T')[0];
+        const movimentacoesResponse = await fetch(`/get_movimentacoes?data=${hoje}`);
+        const movimentacoesData = await movimentacoesResponse.json();
+        
+        if (movimentacoesData.status === 'success') {
+            const movimentacoes = movimentacoesData.movimentacoes || [];
+            const entradas = movimentacoes.filter(m => m.tipo_movimento === 'ENTRADA').length;
+            const saidas = movimentacoes.filter(m => m.tipo_movimento === 'SAIDA').length;
+            
+            document.getElementById('total-movimentacoes').textContent = movimentacoes.length;
+            document.getElementById('entradas-hoje').textContent = entradas;
+            document.getElementById('saidas-hoje').textContent = saidas;
+        }
+        
+        // Carregar valor total do estoque (estimado)
+        await calcularValorEstoque();
+        
+        // Carregar lojas ativas
+        await carregarContadorLojas();
+        
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+    }
+}
+
+// Calcular valor total do estoque
+async function calcularValorEstoque() {
+    try {
+        const response = await fetch('/get_valor_estoque');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success') {
+                const valor = parseFloat(data.valor_total || 0);
+                document.getElementById('valor-total').textContent = 
+                    'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao calcular valor do estoque:', error);
+        document.getElementById('valor-total').textContent = 'R$ 0,00';
+    }
+}
+
+// Atualizar contador de produtos em alerta (estoque baixo)
+async function atualizarAlertasEstoque() {
+    try {
+        // Esta função pode ser expandida para verificar estoque baixo
+        // Por enquanto, vamos simular um valor
+        const alertas = Math.floor(Math.random() * 5); // Simular alertas
+        document.getElementById('produtos-alerta').textContent = alertas;
+    } catch (error) {
+        console.error('Erro ao atualizar alertas:', error);
+        document.getElementById('produtos-alerta').textContent = '0';
+    }
+}
+
+// Carregar movimentações recentes para o dashboard
+async function carregarMovimentacoesRecentes() {
+    try {
+        const response = await fetch('/get_movimentacoes_recentes');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const container = document.getElementById('recent-movements');
+            if (!container) return;
+            
+            if (data.movimentacoes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Nenhuma movimentação recente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = data.movimentacoes.slice(0, 5).map(mov => `
+                <div class="movement-card ${mov.tipo_movimento.toLowerCase()}">
+                    <div class="movement-icon">
+                        <i class="fas fa-${mov.tipo_movimento === 'ENTRADA' ? 'arrow-up' : 'arrow-down'}"></i>
+                    </div>
+                    <div class="movement-info">
+                        <h4>${mov.produto_nome}</h4>
+                        <p>${mov.tipo_movimento} • ${mov.quantidade} ${mov.unidade}</p>
+                        <span class="movement-date">${formatarData(mov.data)}</span>
+                    </div>
+                    <div class="movement-value">
+                        R$ ${(mov.valor_unitario * mov.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar movimentações recentes:', error);
+    }
+}
+
+// Função para animações de entrada dos cards
+function animarCards() {
+    const cards = document.querySelectorAll('.action-card, .stat-card');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, index * 100);
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.6s ease';
+        observer.observe(card);
+    });
+}
+
+// Função para adicionar interatividade aos cards
+function adicionarInteratividadeCards() {
+    const cards = document.querySelectorAll('.action-card');
+    
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.zIndex = '10';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.zIndex = '1';
+        });
+        
+        // Adicionar efeito de clique
+        card.addEventListener('click', function(e) {
+            if (e.target.closest('.card-button')) return;
+            
+            // Simular clique no botão do card
+            const button = this.querySelector('.card-button');
+            if (button) {
+                button.click();
+            }
+        });
+    });
+}
+
+// Função para atualizar dados em tempo real
+function iniciarAtualizacaoAutomatica() {
+    // Atualizar estatísticas a cada 5 minutos
+    setInterval(() => {
+        carregarEstatisticas();
+        carregarMovimentacoesRecentes();
+    }, 5 * 60 * 1000);
+}
+
+// Função para mostrar feedback visual
+function mostrarFeedback(tipo, mensagem, duracao = 3000) {
+    const feedback = document.createElement('div');
+    feedback.className = `feedback-toast ${tipo}`;
+    feedback.innerHTML = `
+        <div class="feedback-content">
+            <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${mensagem}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(feedback);
+    
+    // Animar entrada
+    setTimeout(() => feedback.classList.add('show'), 10);
+    
+    // Remover após duração
+    setTimeout(() => {
+        feedback.classList.remove('show');
+        setTimeout(() => document.body.removeChild(feedback), 300);
+    }, duracao);
+}
 // Funções de carregamento de dados
 async function carregarDadosFuncionario(id) {
     try {
