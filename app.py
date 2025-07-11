@@ -782,11 +782,11 @@ def get_produtos():
         farm_id = session.get('farm_id')
         
         query = text("""
-            SELECT 
-                id, 
-                produto, 
-                unidade, 
-                ativo, 
+            SELECT
+                id,
+                produto,
+                tipo as unidade,  # CORREÇÃO: usar alias
+                ativo,
                 classificacao,
                 COALESCE(
                     (SELECT SUM(
@@ -3504,7 +3504,7 @@ def get_movimentacoes():
                 re.quantidade,
                 re.valor_unitario,
                 p.produto as produto_nome,
-                p.unidade,
+                p.tipo as unidade,
                 f.nome as funcionario_nome,
                 l.loja as loja_nome
             FROM registro_estoque re
@@ -3567,7 +3567,7 @@ def get_movimentacoes_recentes():
                 re.quantidade,
                 re.valor_unitario,
                 p.produto as produto_nome,
-                p.unidade,
+                p.tipo as unidade,
                 f.nome as funcionario_nome
             FROM registro_estoque re
             JOIN produtos p ON re.produto_id = p.id

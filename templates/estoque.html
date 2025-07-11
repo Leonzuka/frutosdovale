@@ -396,9 +396,220 @@
         </div>
     </div>
 
-    <!-- Os demais modais seguem a mesma estrutura, mantendo funcionalidade existente -->
-    <!-- Modal de Adicionar Produto, Remover Produto, Adicionar Loja, Remover Loja, Download -->
-    <!-- ... (mantendo a estrutura existente dos outros modais) ... -->
+    <!-- Modal de Adicionar Produto -->
+    <div id="addProdutoModal" class="modal modern-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-plus-circle"></i>
+                    Adicionar Novo Produto
+                </h3>
+                <button class="close-modal" onclick="closeModal('addProdutoModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="addProdutoForm">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="nomeProduto">
+                                <i class="fas fa-box"></i>
+                                Nome do Produto
+                            </label>
+                            <input type="text" id="nomeProduto" name="nome" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tipoProduto">
+                                <i class="fas fa-weight"></i>
+                                Tipo/Unidade
+                            </label>
+                            <select id="tipoProduto" name="tipo" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="KG">KG - Quilograma</option>
+                                <option value="L">L - Litro</option>
+                                <option value="UN">UN - Unidade</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="classificacaoProduto">
+                                <i class="fas fa-tag"></i>
+                                Classificação
+                            </label>
+                            <select id="classificacaoProduto" name="classificacao" required>
+                                <option value="">Selecione a classificação</option>
+                                <option value="FERTILIZANTE">Fertilizante</option>
+                                <option value="DEFENSIVOS">Defensivos</option>
+                                <option value="EMBALAGEM">Embalagem</option>
+                                <option value="ESPALHANTE">Espalhante</option>
+                                <option value="FOLIAR">Foliar</option>
+                                <option value="HORMONAL">Hormonal</option>
+                                <option value="PEÇAS">Peças</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i>
+                            Adicionar Produto
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('addProdutoModal')">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Remover Produto -->
+    <div id="removeProdutoModal" class="modal modern-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-trash-alt"></i>
+                    Gerenciar Produtos
+                </h3>
+                <button class="close-modal" onclick="closeModal('removeProdutoModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="search-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchProduto" placeholder="Buscar produto...">
+                    </div>
+                </div>
+                
+                <div id="listaProdutos" class="products-list">
+                    <!-- Lista de produtos será carregada via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Adicionar Loja -->
+    <div id="addLojaModal" class="modal modern-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-store"></i>
+                    Adicionar Nova Loja
+                </h3>
+                <button class="close-modal" onclick="closeModal('addLojaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="addLojaForm">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="nomeLoja">
+                                <i class="fas fa-store"></i>
+                                Nome da Loja
+                            </label>
+                            <input type="text" id="nomeLoja" name="nome" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="telefoneLoja">
+                                <i class="fas fa-phone"></i>
+                                Telefone
+                            </label>
+                            <input type="text" id="telefoneLoja" name="telefone" placeholder="(87) 99999-9999">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="vendedorLoja">
+                                <i class="fas fa-user-tie"></i>
+                                Vendedor
+                            </label>
+                            <input type="text" id="vendedorLoja" name="vendedor">
+                        </div>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i>
+                            Adicionar Loja
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('addLojaModal')">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Remover Loja -->
+    <div id="removeLojaModal" class="modal modern-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-store-slash"></i>
+                    Gerenciar Lojas
+                </h3>
+                <button class="close-modal" onclick="closeModal('removeLojaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div id="listaLojas" class="lojas-list">
+                    <!-- Lista de lojas será carregada via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Download -->
+    <div id="downloadModal" class="modal modern-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-download"></i>
+                    Download de Relatórios
+                </h3>
+                <button class="close-modal" onclick="closeModal('downloadModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="download-options">
+                    <h4>Escolha o tipo de relatório:</h4>
+                    
+                    <div class="download-grid">
+                        <button class="download-option" onclick="downloadPlanilha('completo')">
+                            <i class="fas fa-file-excel"></i>
+                            <span>Relatório Completo</span>
+                            <small>Todas as movimentações</small>
+                        </button>
+                        
+                        <button class="download-option" onclick="downloadPlanilha('resumo')">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Resumo do Estoque</span>
+                            <small>Saldo atual por produto</small>
+                        </button>
+                        
+                        <button class="download-option" onclick="downloadPlanilha('mensal')">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Relatório Mensal</span>
+                            <small>Movimentações do mês</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="main-footer">
         <div class="footer-content">
