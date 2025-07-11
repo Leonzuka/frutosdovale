@@ -1,812 +1,609 @@
 // Inicialização quando a página carrega
-document.addEventListener('DOMContentLoaded', initializeEstoque);
-
-// Função de inicialização melhorada
-function initializeEstoque() {
-    initializePage();
-    carregarDados();
-    carregarEstatisticas();
-    carregarMovimentacoesRecentes();
-    mostrarClassificacaoProduto();
-    animarCards();
-    adicionarInteratividadeCards();
-    iniciarAtualizacaoAutomatica();
-    
-    // Definir data atual
-    const dataInput = document.getElementById('data');
-    if (dataInput) {
-        dataInput.valueAsDate = new Date();
-    }
-}
+document.addEventListener('DOMContentLoaded', () => {
+initializePage();
+carregarDados();
+setupFormHandlers();
+setupModalHandlers(); 
+carregarUltimosApontamentos(1); 
+setupPaginationHandlers();
+carregarAtividadesLote()
+});
 
 let currentPage = 1;
 let totalPages = 1;
 
 function initializePage() {
-    const dateDisplay = document.getElementById('current-date');
-    const yearDisplay = document.getElementById('current-year');
-    
-    // Inicialização do estado dos campos baseado no tipo padrão (Meta)
-    const extraGroup = document.getElementById('extraGroup');
-    const valorUnitGroup = document.getElementById('valorUnitGroup');
-    const horasGroup = document.querySelector('.form-group:has(#horas)');
-    const metaLabel = document.querySelector('label[for="meta"]');
-    const realizadoLabel = document.querySelector('label[for="realizado"]');
-    
-    // Define estados iniciais para tipo Meta
-    if (extraGroup && valorUnitGroup && horasGroup && metaLabel && realizadoLabel) {
-        extraGroup.style.display = 'block';
-        valorUnitGroup.style.display = 'block';
-        horasGroup.style.display = 'none';
-        metaLabel.textContent = 'Meta:';
-        realizadoLabel.textContent = 'Realizado:';
-        
-        // Adiciona o listener inicial para cálculo de extra
-        const realizadoInput = document.getElementById('realizado');
-        if (realizadoInput) {
-            realizadoInput.addEventListener('input', calcularExtra);
-        }
-    }
-    
-    // Adiciona listeners para os cards
-    const cards = document.querySelectorAll('.action-card');
-    cards.forEach(card => {
-        card.addEventListener('click', (e) => {
-            // Se o clique não foi no botão, executa a ação do card
-            if (!e.target.closest('.card-button')) {
-                if (card.id === 'registroCard') {
+const dateDisplay = document.getElementById('current-date');
+const yearDisplay = document.getElementById('current-year');
+
+// Inicialização do estado dos campos baseado no tipo padrão (Meta)
+const extraGroup = document.getElementById('extraGroup');
+const valorUnitGroup = document.getElementById('valorUnitGroup');
+const horasGroup = document.querySelector('.form-group:has(#horas)');
+const metaLabel = document.querySelector('label[for="meta"]');
+const realizadoLabel = document.querySelector('label[for="realizado"]');
+
+// Define estados iniciais para tipo Meta
+if (extraGroup && valorUnitGroup && horasGroup && metaLabel && realizadoLabel) {
+extraGroup.style.display = 'block';
+valorUnitGroup.style.display = 'block';
+horasGroup.style.display = 'none';
+metaLabel.textContent = 'Meta:';
+realizadoLabel.textContent = 'Realizado:';
+
+// Adiciona o listener inicial para cálculo de extra
+const realizadoInput = document.getElementById('realizado');
+if (realizadoInput) {
+realizadoInput.addEventListener('input', calcularExtra);
+}
+}
+
+// Adiciona listeners para os cards
+const cards = document.querySelectorAll('.action-card');
+cards.forEach(card => {
+card.addEventListener('click', (e) => {
+// Se o clique não foi no botão, executa a ação do card
+if (!e.target.closest('.card-button')) {
+if (card.id === 'registroCard') {
+                    showForm();
                     showModal('registroModal'); // ← MUDANÇA: usar showModal em vez de showForm()
-                } else if (card.id === 'downloadCard') {
-                    showModal('downloadModal');
-                } else if (card.id === 'addAtividadeCard') {
-                    showModal('addAtividadeModal');
-                } else if (card.id === 'desativarAtividadeCard') {
-                    showModal('desativarAtividadeModal');
-                } else if (card.id === 'registroLoteCard') {
-                    showModal('registroLoteModal');
-                }
-            }
-        });
-    });
-    
-    // Configura data atual
-    const currentDate = new Date();
-    if (dateDisplay) {
-        dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
-    }
-    if (yearDisplay) {
-        yearDisplay.textContent = currentDate.getFullYear();
-    }
+} else if (card.id === 'downloadCard') {
+showModal('downloadModal');
+} else if (card.id === 'addAtividadeCard') {
+showModal('addAtividadeModal');
+} else if (card.id === 'desativarAtividadeCard') {
+showModal('desativarAtividadeModal');
+} else if (card.id === 'registroLoteCard') {
+showModal('registroLoteModal');
+}
+}
+});
+});
 
-    // Define data atual no campo de data
-    const dataInput = document.getElementById('data');
-    if (dataInput) {
-        dataInput.valueAsDate = new Date();
-    }
-
-    // Configuração inicial do campo de atividade
-    const atividadeSelect = document.getElementById('atividade');
-    atividadeSelect.addEventListener('change', (e) => {
-        const selectedOption = e.target.selectedOptions[0];
-        if (selectedOption) {
-            const tipoApontamento = document.getElementById('tipoApontamento').value;
-            
-            if (tipoApontamento === 'Meta') {
-                document.getElementById('meta').value = selectedOption.dataset.meta || '';
-            } else if (tipoApontamento === 'Hora') {
-                document.getElementById('meta').value = '8.00';
-            }
-            
-            document.getElementById('valorUnit').value = selectedOption.dataset.valorUnit || '';
-            document.getElementById('extra').value = '0.00';
-            document.getElementById('horas').value = '0.00';
-            document.getElementById('realizado').value = '';
-        }
-    });
-
-    // Inicializa handlers de paginação
-    setupPaginationHandlers();
+// Configura data atual
+const currentDate = new Date();
+if (dateDisplay) {
+dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+}
+if (yearDisplay) {
+yearDisplay.textContent = currentDate.getFullYear();
 }
 
-// Carregar estatísticas do dashboard
-async function carregarEstatisticas() {
-    try {
-        // Carregar total de produtos ativos
-        const produtosResponse = await fetch('/get_produtos');
-        const produtosData = await produtosResponse.json();
-        
-        if (produtosData.status === 'success') {
-            const totalProdutos = produtosData.produtos.length;
-            const produtosAtivos = produtosData.produtos.filter(p => p.ativo === 1).length;
-            const produtosInativos = totalProdutos - produtosAtivos;
-            
-            document.getElementById('total-produtos').textContent = produtosAtivos;
-            document.getElementById('inativos-count').textContent = produtosInativos;
-        }
-        
-        // Carregar movimentações de hoje
-        const hoje = new Date().toISOString().split('T')[0];
-        const movimentacoesResponse = await fetch(`/get_movimentacoes?data=${hoje}`);
-        const movimentacoesData = await movimentacoesResponse.json();
-        
-        if (movimentacoesData.status === 'success') {
-            const movimentacoes = movimentacoesData.movimentacoes || [];
-            const entradas = movimentacoes.filter(m => m.tipo_movimento === 'ENTRADA').length;
-            const saidas = movimentacoes.filter(m => m.tipo_movimento === 'SAIDA').length;
-            
-            document.getElementById('total-movimentacoes').textContent = movimentacoes.length;
-            document.getElementById('entradas-hoje').textContent = entradas;
-            document.getElementById('saidas-hoje').textContent = saidas;
-        }
-        
-        // Carregar valor total do estoque (estimado)
-        await calcularValorEstoque();
-        
-        // Carregar lojas ativas
-        await carregarContadorLojas();
-        
-    } catch (error) {
-        console.error('Erro ao carregar estatísticas:', error);
-    }
+// Define data atual no campo de data
+const dataInput = document.getElementById('data');
+if (dataInput) {
+dataInput.valueAsDate = new Date();
 }
 
-// Calcular valor total do estoque
-async function calcularValorEstoque() {
-    try {
-        const response = await fetch('/get_valor_estoque');
-        if (response.ok) {
-            const data = await response.json();
-            if (data.status === 'success') {
-                const valor = parseFloat(data.valor_total || 0);
-                document.getElementById('valor-total').textContent = 
-                    'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao calcular valor do estoque:', error);
-        document.getElementById('valor-total').textContent = 'R$ 0,00';
-    }
+// Configuração inicial do campo de atividade
+const atividadeSelect = document.getElementById('atividade');
+atividadeSelect.addEventListener('change', (e) => {
+const selectedOption = e.target.selectedOptions[0];
+if (selectedOption) {
+const tipoApontamento = document.getElementById('tipoApontamento').value;
+
+if (tipoApontamento === 'Meta') {
+document.getElementById('meta').value = selectedOption.dataset.meta || '';
+} else if (tipoApontamento === 'Hora') {
+document.getElementById('meta').value = '8.00';
 }
 
-// Atualizar contador de produtos em alerta (estoque baixo)
-async function atualizarAlertasEstoque() {
-    try {
-        // Esta função pode ser expandida para verificar estoque baixo
-        // Por enquanto, vamos simular um valor
-        const alertas = Math.floor(Math.random() * 5); // Simular alertas
-        document.getElementById('produtos-alerta').textContent = alertas;
-    } catch (error) {
-        console.error('Erro ao atualizar alertas:', error);
-        document.getElementById('produtos-alerta').textContent = '0';
-    }
+document.getElementById('valorUnit').value = selectedOption.dataset.valorUnit || '';
+document.getElementById('extra').value = '0.00';
+document.getElementById('horas').value = '0.00';
+document.getElementById('realizado').value = '';
+}
+});
+
+// Inicializa handlers de paginação
+setupPaginationHandlers();
 }
 
-// Carregar movimentações recentes para o dashboard
-async function carregarMovimentacoesRecentes() {
-    try {
-        const response = await fetch('/get_movimentacoes_recentes');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const container = document.getElementById('recent-movements');
-            if (!container) return;
-            
-            if (data.movimentacoes.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <p>Nenhuma movimentação recente</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = data.movimentacoes.slice(0, 5).map(mov => `
-                <div class="movement-card ${mov.tipo_movimento.toLowerCase()}">
-                    <div class="movement-icon">
-                        <i class="fas fa-${mov.tipo_movimento === 'ENTRADA' ? 'arrow-up' : 'arrow-down'}"></i>
-                    </div>
-                    <div class="movement-info">
-                        <h4>${mov.produto_nome}</h4>
-                        <p>${mov.tipo_movimento} • ${mov.quantidade} ${mov.unidade}</p>
-                        <span class="movement-date">${formatarData(mov.data)}</span>
-                    </div>
-                    <div class="movement-value">
-                        R$ ${(mov.valor_unitario * mov.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                </div>
-            `).join('');
-        }
-    } catch (error) {
-        console.error('Erro ao carregar movimentações recentes:', error);
-    }
-}
-
-// Função para animações de entrada dos cards
-function animarCards() {
-    const cards = document.querySelectorAll('.action-card, .stat-card');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                setTimeout(() => {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }, index * 100);
-            }
-        });
-    }, { threshold: 0.1 });
-    
-    cards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'all 0.6s ease';
-        observer.observe(card);
-    });
-}
-
-// Função para adicionar interatividade aos cards
-function adicionarInteratividadeCards() {
-    const cards = document.querySelectorAll('.action-card');
-    
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.zIndex = '10';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.zIndex = '1';
-        });
-        
-        // Adicionar efeito de clique
-        card.addEventListener('click', function(e) {
-            if (e.target.closest('.card-button')) return;
-            
-            // Simular clique no botão do card
-            const button = this.querySelector('.card-button');
-            if (button) {
-                button.click();
-            }
-        });
-    });
-}
-
-// Função para atualizar dados em tempo real
-function iniciarAtualizacaoAutomatica() {
-    // Atualizar estatísticas a cada 5 minutos
-    setInterval(() => {
-        carregarEstatisticas();
-        carregarMovimentacoesRecentes();
-    }, 5 * 60 * 1000);
-}
-
-// Função para mostrar feedback visual
-function mostrarFeedback(tipo, mensagem, duracao = 3000) {
-    const feedback = document.createElement('div');
-    feedback.className = `feedback-toast ${tipo}`;
-    feedback.innerHTML = `
-        <div class="feedback-content">
-            <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            <span>${mensagem}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(feedback);
-    
-    // Animar entrada
-    setTimeout(() => feedback.classList.add('show'), 10);
-    
-    // Remover após duração
-    setTimeout(() => {
-        feedback.classList.remove('show');
-        setTimeout(() => document.body.removeChild(feedback), 300);
-    }, duracao);
-}
 // Funções de carregamento de dados
 async function carregarDadosFuncionario(id) {
-    try {
-        const response = await fetch(`/get_funcionario/${id}`);
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const form = document.getElementById('alterarForm');
-            form.style.display = 'block';
-            
-            // Verificar se os campos existem antes de atribuir valores
-            const campos = {
-                'nomeAlterar': data.funcionario.nome,
-                'cpfAlterar': data.funcionario.cpf,
-                'dataNascimentoAlterar': data.funcionario.data_nascimento,
-                'sexoAlterar': data.funcionario.sexo,
-                'funcaoAlterar': data.funcionario.funcao,
-                'dataAdmissaoAlterar': data.funcionario.data_admissao,
-                'tipoContratacaoAlterar': data.funcionario.tipo_contratacao,
-                'pixAlterar': data.funcionario.pix || '',
-                'enderecoAlterar': data.funcionario.endereco || ''
-            };
+try {
+const response = await fetch(`/get_funcionario/${id}`);
+const data = await response.json();
 
-            // Atribuir valores apenas se o campo existir
-            Object.entries(campos).forEach(([id, valor]) => {
-                const campo = document.getElementById(id);
-                if (campo && valor !== undefined) {
-                    campo.value = valor;
-                }
-            });
+if (data.status === 'success') {
+const form = document.getElementById('alterarForm');
+form.style.display = 'block';
 
-            console.log('Dados do funcionário carregados:', data.funcionario);
-        } else {
-            console.error('Erro ao carregar dados:', data.message);
-            alert('Erro ao carregar dados do funcionário');
-        }
-    } catch (error) {
-        console.error('Erro ao carregar dados do funcionário:', error);
-        alert('Erro ao carregar dados do funcionário');
-    }
+// Verificar se os campos existem antes de atribuir valores
+const campos = {
+'nomeAlterar': data.funcionario.nome,
+'cpfAlterar': data.funcionario.cpf,
+'dataNascimentoAlterar': data.funcionario.data_nascimento,
+'sexoAlterar': data.funcionario.sexo,
+'funcaoAlterar': data.funcionario.funcao,
+'dataAdmissaoAlterar': data.funcionario.data_admissao,
+'tipoContratacaoAlterar': data.funcionario.tipo_contratacao,
+'pixAlterar': data.funcionario.pix || '',
+'enderecoAlterar': data.funcionario.endereco || ''
+};
+
+// Atribuir valores apenas se o campo existir
+Object.entries(campos).forEach(([id, valor]) => {
+const campo = document.getElementById(id);
+if (campo && valor !== undefined) {
+campo.value = valor;
+}
+});
+
+console.log('Dados do funcionário carregados:', data.funcionario);
+} else {
+console.error('Erro ao carregar dados:', data.message);
+alert('Erro ao carregar dados do funcionário');
+}
+} catch (error) {
+console.error('Erro ao carregar dados do funcionário:', error);
+alert('Erro ao carregar dados do funcionário');
+}
 }
 
 async function carregarValvulas(retryCount = 3, delay = 1000) {
-    for (let attempt = 1; attempt <= retryCount; attempt++) {
-        try {
-            const response = await fetch('/get_valvulas');
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                const select = document.getElementById('valvula');
-                select.innerHTML = '<option value="">Selecione a válvula</option>';
-                
-                data.valvulas.forEach(valvula => {
-                    const option = document.createElement('option');
-                    option.value = valvula.id;
-                    option.textContent = `${valvula.valvula} - ${valvula.variedade}`;
-                    select.appendChild(option);
-                });
-                
-                return; // Sucesso, sai da função
-            } else {
-                console.warn(`Tentativa ${attempt}: Erro ao carregar válvulas:`, data.message);
-                
-                if (attempt === retryCount) {
-                    throw new Error(data.message);
-                }
-            }
-        } catch (error) {
-            console.warn(`Tentativa ${attempt}: Erro ao carregar válvulas:`, error);
-            
-            if (attempt === retryCount) {
-                console.error('Todas as tentativas falharam ao carregar válvulas:', error);
-                const select = document.getElementById('valvula');
-                if (select) {
-                    select.innerHTML = '<option value="">Erro ao carregar válvulas</option>';
-                }
-                break;
-            }
-            
-            // Espera antes da próxima tentativa
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
+for (let attempt = 1; attempt <= retryCount; attempt++) {
+try {
+const response = await fetch('/get_valvulas');
+const data = await response.json();
+
+if (data.status === 'success') {
+const select = document.getElementById('valvula');
+select.innerHTML = '<option value="">Selecione a válvula</option>';
+
+data.valvulas.forEach(valvula => {
+const option = document.createElement('option');
+option.value = valvula.id;
+option.textContent = `${valvula.valvula} - ${valvula.variedade}`;
+select.appendChild(option);
+});
+
+return; // Sucesso, sai da função
+} else {
+console.warn(`Tentativa ${attempt}: Erro ao carregar válvulas:`, data.message);
+
+if (attempt === retryCount) {
+throw new Error(data.message);
+}
+}
+} catch (error) {
+console.warn(`Tentativa ${attempt}: Erro ao carregar válvulas:`, error);
+
+if (attempt === retryCount) {
+console.error('Todas as tentativas falharam ao carregar válvulas:', error);
+const select = document.getElementById('valvula');
+if (select) {
+select.innerHTML = '<option value="">Erro ao carregar válvulas</option>';
+}
+break;
+}
+
+// Espera antes da próxima tentativa
+await new Promise(resolve => setTimeout(resolve, delay));
+}
+}
 }
 
 async function carregarAtividades() {
-    try {
-        const response = await fetch('/get_atividades');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const select = document.getElementById('atividade');
-            select.innerHTML = '<option value="">Selecione a atividade</option>';
-            
-            data.atividades.forEach(atividade => {
-                const option = document.createElement('option');
-                option.value = atividade.id;
-                option.textContent = atividade.atividade;
-                option.dataset.meta = atividade.meta;
-                option.dataset.valorUnit = atividade.valor_unit;
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao carregar atividades:', error);
-    }
+try {
+const response = await fetch('/get_atividades');
+const data = await response.json();
+
+if (data.status === 'success') {
+const select = document.getElementById('atividade');
+select.innerHTML = '<option value="">Selecione a atividade</option>';
+
+data.atividades.forEach(atividade => {
+const option = document.createElement('option');
+option.value = atividade.id;
+option.textContent = atividade.atividade;
+option.dataset.meta = atividade.meta;
+option.dataset.valorUnit = atividade.valor_unit;
+select.appendChild(option);
+});
+}
+} catch (error) {
+console.error('Erro ao carregar atividades:', error);
+}
 }
 
 async function carregarListaAtividades() {
-    console.log('Iniciando carregamento da lista de atividades');
-    try {
-        const response = await fetch('/get_atividades');
-        const data = await response.json();
-        console.log('Dados recebidos:', data);
-        
-        if (data.status === 'success') {
-            const listaAtividades = document.getElementById('listaAtividades');
-            console.log('Elemento listaAtividades:', listaAtividades);
-            
-            if (!listaAtividades) {
-                console.error('Elemento listaAtividades não encontrado');
-                return;
-            }
-            
-            listaAtividades.innerHTML = '';
-            
-            if (data.atividades.length === 0) {
-                console.log('Nenhuma atividade encontrada');
-                listaAtividades.innerHTML = '<div class="atividade-item">Nenhuma atividade cadastrada</div>';
-                return;
-            }
-            
-            data.atividades.forEach(atividade => {
-                console.log('Criando elemento para atividade:', atividade);
-                const div = document.createElement('div');
-                div.className = 'atividade-item';
-                div.innerHTML = `
-                    <span>${atividade.atividade} - Meta: ${atividade.meta || 'N/A'} - Valor: R$ ${atividade.valor_unit.toFixed(2)}</span>
-                    <button onclick="desativarAtividade(${atividade.id})" class="btn-remove">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-                listaAtividades.appendChild(div);
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao carregar lista de atividades:', error);
-    }
+console.log('Iniciando carregamento da lista de atividades');
+try {
+const response = await fetch('/get_atividades');
+const data = await response.json();
+console.log('Dados recebidos:', data);
+
+if (data.status === 'success') {
+const listaAtividades = document.getElementById('listaAtividades');
+console.log('Elemento listaAtividades:', listaAtividades);
+
+if (!listaAtividades) {
+console.error('Elemento listaAtividades não encontrado');
+return;
+}
+
+listaAtividades.innerHTML = '';
+
+if (data.atividades.length === 0) {
+console.log('Nenhuma atividade encontrada');
+listaAtividades.innerHTML = '<div class="atividade-item">Nenhuma atividade cadastrada</div>';
+return;
+}
+
+data.atividades.forEach(atividade => {
+console.log('Criando elemento para atividade:', atividade);
+const div = document.createElement('div');
+div.className = 'atividade-item';
+div.innerHTML = `
+                   <span>${atividade.atividade} - Meta: ${atividade.meta || 'N/A'} - Valor: R$ ${atividade.valor_unit.toFixed(2)}</span>
+                   <button onclick="desativarAtividade(${atividade.id})" class="btn-remove">
+                       <i class="fas fa-trash"></i>
+                   </button>
+               `;
+listaAtividades.appendChild(div);
+});
+}
+} catch (error) {
+console.error('Erro ao carregar lista de atividades:', error);
+}
 }
 
 async function carregarDados() {
-    await Promise.all([
-        carregarFuncionarios(),
-        carregarValvulas(),
-        carregarAtividades()
-    ]);
+await Promise.all([
+carregarFuncionarios(),
+carregarValvulas(),
+carregarAtividades()
+]);
 }
 
 async function carregarFuncionarios() {
-    try {
-        const response = await fetch('/get_funcionarios');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            // Array com os IDs dos selects que precisam ser preenchidos
-            const selectIds = ['funcionario', 'funcionarioLote'];
-            
-            selectIds.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (select) {
-                    select.innerHTML = '<option value="">Selecione o funcionário</option>';
-                    
-                    data.funcionarios.forEach(funcionario => {
-                        const option = document.createElement('option');
-                        option.value = funcionario.id;
-                        option.textContent = funcionario.nome;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao carregar funcionários:', error);
-    }
+try {
+const response = await fetch('/get_funcionarios');
+const data = await response.json();
+
+if (data.status === 'success') {
+// Array com os IDs dos selects que precisam ser preenchidos
+const selectIds = ['funcionario', 'funcionarioLote'];
+
+selectIds.forEach(selectId => {
+const select = document.getElementById(selectId);
+if (select) {
+select.innerHTML = '<option value="">Selecione o funcionário</option>';
+
+data.funcionarios.forEach(funcionario => {
+const option = document.createElement('option');
+option.value = funcionario.id;
+option.textContent = funcionario.nome;
+select.appendChild(option);
+});
+}
+});
+}
+} catch (error) {
+console.error('Erro ao carregar funcionários:', error);
+}
 }
 
 // Setup de handlers
 function setupFormHandlers() {
-    const tipoApontamentoSelect = document.getElementById('tipoApontamento');
-    const realizadoInput = document.getElementById('realizado');
-    const metaInput = document.getElementById('meta');
-    const horasInput = document.getElementById('horas');
-    const extraGroup = document.getElementById('extraGroup');
-    const valorUnitGroup = document.getElementById('valorUnitGroup');
-    const form = document.getElementById('registroApontamentoForm');
+const tipoApontamentoSelect = document.getElementById('tipoApontamento');
+const realizadoInput = document.getElementById('realizado');
+const metaInput = document.getElementById('meta');
+const horasInput = document.getElementById('horas');
+const extraGroup = document.getElementById('extraGroup');
+const valorUnitGroup = document.getElementById('valorUnitGroup');
+const form = document.getElementById('registroApontamentoForm');
 
-    if (tipoApontamentoSelect) {
-        tipoApontamentoSelect.addEventListener('change', function(e) {
-            const tipo = e.target.value;
-            const metaLabel = document.querySelector('label[for="meta"]');
-            const realizadoLabel = document.querySelector('label[for="realizado"]');
-            const horasLabel = document.querySelector('label[for="horas"]');
-            const extraGroup = document.getElementById('extraGroup');
-            const valorUnitGroup = document.getElementById('valorUnitGroup');
-            const horasGroup = document.querySelector('.form-group:has(#horas)');
-            const metaInput = document.getElementById('meta');
-            
-            // Resetar todos os campos
-            realizadoInput.value = '';
-            horasInput.value = '0.00';
-            document.getElementById('extra').value = '0.00';
-            
-            switch(tipo) {
-                case 'Hora':
-                    // Para tipo Hora, mostrar apenas horas
-                    extraGroup.style.display = 'none';
-                    valorUnitGroup.style.display = 'none';
-                    horasGroup.style.display = 'block';
-                    metaLabel.textContent = 'Meta (Horas):';
-                    realizadoLabel.textContent = 'Horas Realizadas:';
-                    horasLabel.textContent = 'Horas Extras:';
-                    metaInput.value = '8.00'; // Meta fixa de 8 horas
-                    
-                    // Reabilitar cálculo para tipo Hora
-                    realizadoInput.addEventListener('input', calcularHorasExtras);
-                    realizadoInput.removeEventListener('input', calcularExtra);
-                    break;
-                
-                case 'Meta':
-                    // Para tipo Meta, mostrar valor unitário e extra, esconder horas
-                    extraGroup.style.display = 'block';
-                    valorUnitGroup.style.display = 'block';
-                    horasGroup.style.display = 'none';
-                    metaLabel.textContent = 'Meta:';
-                    realizadoLabel.textContent = 'Realizado:';
-                    metaInput.readOnly = false; // Permitir edição
-                    
-                    // Carregar meta e valor unitário da atividade selecionada
-                    const atividadeOpt = document.getElementById('atividade').selectedOptions[0];
-                    if (atividadeOpt) {
-                        metaInput.value = atividadeOpt.dataset.meta || '';
-                        document.getElementById('valorUnit').value = atividadeOpt.dataset.valorUnit || '';
-                    }
-                    
-                    // Adicionar cálculo de extra
-                    realizadoInput.addEventListener('input', calcularExtra);
-                    realizadoInput.removeEventListener('input', calcularHorasExtras);
-                    break;
-                
-                case 'Compensado':
-                    // Para tipo Compensado, mostrar apenas horas
-                    extraGroup.style.display = 'none';
-                    valorUnitGroup.style.display = 'none';
-                    horasGroup.style.display = 'block';
-                    metaLabel.textContent = 'Meta:';
-                    realizadoLabel.textContent = 'Realizado:';
-                    horasLabel.textContent = 'Horas Compensadas:';
-                    metaInput.readOnly = false; // Permitir edição
-                    
-                    // Carregar meta da atividade selecionada
-                    const atividadeSelect = document.getElementById('atividade');
-                    const selectedOption = atividadeSelect.selectedOptions[0];
-                    if (selectedOption) {
-                        metaInput.value = selectedOption.dataset.meta || '';
-                    }
-                    
-                    // Remover listeners antigos e adicionar apenas cálculo de horas
-                    realizadoInput.removeEventListener('input', calcularExtra);
-                    realizadoInput.removeEventListener('input', calcularHorasExtras);
-                    realizadoInput.addEventListener('input', calcularHoras);
-                    break;
-            }
-        });
-    }
+if (tipoApontamentoSelect) {
+tipoApontamentoSelect.addEventListener('change', function(e) {
+const tipo = e.target.value;
+const metaLabel = document.querySelector('label[for="meta"]');
+const realizadoLabel = document.querySelector('label[for="realizado"]');
+const horasLabel = document.querySelector('label[for="horas"]');
+const extraGroup = document.getElementById('extraGroup');
+const valorUnitGroup = document.getElementById('valorUnitGroup');
+const horasGroup = document.querySelector('.form-group:has(#horas)');
+const metaInput = document.getElementById('meta');
 
-    // Handler para mudança de atividade
-    const atividadeSelect = document.getElementById('atividade');
-    atividadeSelect.addEventListener('change', (e) => {
-        const selectedOption = e.target.selectedOptions[0];
-        const tipoApontamento = document.getElementById('tipoApontamento').value;
-        
-        if (selectedOption) {
-            const atividadeNome = selectedOption.textContent;
-            const valvulaSelect = document.getElementById('valvula');
-            
-            if (isAtividadeEspecial(atividadeNome)) {
-                document.getElementById('valorUnit').value = atividadeNome.toLowerCase() === 'falta' ? '0.00' : '0.00';
-                document.getElementById('meta').value = tipoApontamento === 'Hora' ? '8.00' : '1';
-                document.getElementById('realizado').value = '1';
-                document.getElementById('extra').value = atividadeNome.toLowerCase() === 'falta' ? '0.00' : '0.00';
-                document.getElementById('horas').value = '0.00';
-                realizadoInput.readOnly = true;
-                valvulaSelect.value = '33';
-                valvulaSelect.disabled = true;
-            } else {
-                // Aqui está a correção principal
-                if (tipoApontamento === 'Meta') {
-                    document.getElementById('meta').value = selectedOption.dataset.meta || '';
-                } else if (tipoApontamento === 'Hora') {
-                    document.getElementById('meta').value = '8.00';
-                }
-                
-                document.getElementById('valorUnit').value = selectedOption.dataset.valorUnit || '';
-                document.getElementById('extra').value = '0.00';
-                document.getElementById('horas').value = '0.00';
-                realizadoInput.readOnly = false;
-                realizadoInput.value = '';
-                valvulaSelect.disabled = false;
-            }
-        }
-    });
+// Resetar todos os campos
+realizadoInput.value = '';
+horasInput.value = '0.00';
+document.getElementById('extra').value = '0.00';
 
-    // Handler para envio do formulário
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const tipo = formData.get('tipo_apontamento');
+switch(tipo) {
+case 'Hora':
+// Para tipo Hora, mostrar apenas horas
+extraGroup.style.display = 'none';
+valorUnitGroup.style.display = 'none';
+horasGroup.style.display = 'block';
+metaLabel.textContent = 'Meta (Horas):';
+realizadoLabel.textContent = 'Horas Realizadas:';
+horasLabel.textContent = 'Horas Extras:';
+metaInput.value = '8.00'; // Meta fixa de 8 horas
 
-            // Remove campos desnecessários baseado no tipo
-            if (tipo === 'Meta' || tipo === 'Compensado') {
-                formData.delete('extra');
-                formData.delete('valor_unit');
-            }
+// Reabilitar cálculo para tipo Hora
+realizadoInput.addEventListener('input', calcularHorasExtras);
+realizadoInput.removeEventListener('input', calcularExtra);
+break;
 
-            await registrarApontamento(formData);
-        });
-    }
+case 'Meta':
+// Para tipo Meta, mostrar valor unitário e extra, esconder horas
+extraGroup.style.display = 'block';
+valorUnitGroup.style.display = 'block';
+horasGroup.style.display = 'none';
+metaLabel.textContent = 'Meta:';
+realizadoLabel.textContent = 'Realizado:';
+metaInput.readOnly = false; // Permitir edição
 
-    // Handler para o campo realizado
-    if (realizadoInput) {
-        realizadoInput.addEventListener('input', function() {
-            const tipo = document.getElementById('tipoApontamento').value;
-            if (tipo === 'Hora') {
-                calcularExtra();
-                calcularHorasExtras();
-            } else if (tipo === 'Compensado') {
-                calcularHoras();
-            }
-        });
-    }
+// Carregar meta e valor unitário da atividade selecionada
+const atividadeOpt = document.getElementById('atividade').selectedOptions[0];
+if (atividadeOpt) {
+metaInput.value = atividadeOpt.dataset.meta || '';
+document.getElementById('valorUnit').value = atividadeOpt.dataset.valorUnit || '';
+}
+
+// Adicionar cálculo de extra
+realizadoInput.addEventListener('input', calcularExtra);
+realizadoInput.removeEventListener('input', calcularHorasExtras);
+break;
+
+case 'Compensado':
+// Para tipo Compensado, mostrar apenas horas
+extraGroup.style.display = 'none';
+valorUnitGroup.style.display = 'none';
+horasGroup.style.display = 'block';
+metaLabel.textContent = 'Meta:';
+realizadoLabel.textContent = 'Realizado:';
+horasLabel.textContent = 'Horas Compensadas:';
+metaInput.readOnly = false; // Permitir edição
+
+// Carregar meta da atividade selecionada
+const atividadeSelect = document.getElementById('atividade');
+const selectedOption = atividadeSelect.selectedOptions[0];
+if (selectedOption) {
+metaInput.value = selectedOption.dataset.meta || '';
+}
+
+// Remover listeners antigos e adicionar apenas cálculo de horas
+realizadoInput.removeEventListener('input', calcularExtra);
+realizadoInput.removeEventListener('input', calcularHorasExtras);
+realizadoInput.addEventListener('input', calcularHoras);
+break;
+}
+});
+}
+
+// Handler para mudança de atividade
+const atividadeSelect = document.getElementById('atividade');
+atividadeSelect.addEventListener('change', (e) => {
+const selectedOption = e.target.selectedOptions[0];
+const tipoApontamento = document.getElementById('tipoApontamento').value;
+
+if (selectedOption) {
+const atividadeNome = selectedOption.textContent;
+const valvulaSelect = document.getElementById('valvula');
+
+if (isAtividadeEspecial(atividadeNome)) {
+document.getElementById('valorUnit').value = atividadeNome.toLowerCase() === 'falta' ? '0.00' : '0.00';
+document.getElementById('meta').value = tipoApontamento === 'Hora' ? '8.00' : '1';
+document.getElementById('realizado').value = '1';
+document.getElementById('extra').value = atividadeNome.toLowerCase() === 'falta' ? '0.00' : '0.00';
+document.getElementById('horas').value = '0.00';
+realizadoInput.readOnly = true;
+valvulaSelect.value = '33';
+valvulaSelect.disabled = true;
+} else {
+// Aqui está a correção principal
+if (tipoApontamento === 'Meta') {
+document.getElementById('meta').value = selectedOption.dataset.meta || '';
+} else if (tipoApontamento === 'Hora') {
+document.getElementById('meta').value = '8.00';
+}
+
+document.getElementById('valorUnit').value = selectedOption.dataset.valorUnit || '';
+document.getElementById('extra').value = '0.00';
+document.getElementById('horas').value = '0.00';
+realizadoInput.readOnly = false;
+realizadoInput.value = '';
+valvulaSelect.disabled = false;
+}
+}
+});
+
+// Handler para envio do formulário
+if (form) {
+form.addEventListener('submit', async (e) => {
+e.preventDefault();
+const formData = new FormData(form);
+const tipo = formData.get('tipo_apontamento');
+
+// Remove campos desnecessários baseado no tipo
+if (tipo === 'Meta' || tipo === 'Compensado') {
+formData.delete('extra');
+formData.delete('valor_unit');
+}
+
+await registrarApontamento(formData);
+});
+}
+
+// Handler para o campo realizado
+if (realizadoInput) {
+realizadoInput.addEventListener('input', function() {
+const tipo = document.getElementById('tipoApontamento').value;
+if (tipo === 'Hora') {
+calcularExtra();
+calcularHorasExtras();
+} else if (tipo === 'Compensado') {
+calcularHoras();
+}
+});
+}
 }
 
 function setupModalHandlers() {
-    // Configurar o handler de busca
-    const searchInput = document.getElementById('searchAtividade');
-    if (searchInput) {
-        searchInput.addEventListener('input', filtrarAtividades);
-    }
+// Configurar o handler de busca
+const searchInput = document.getElementById('searchAtividade');
+if (searchInput) {
+searchInput.addEventListener('input', filtrarAtividades);
+}
 
-    // Configurar handlers dos formulários modais
-    const addAtividadeForm = document.getElementById('addAtividadeForm');
-    if (addAtividadeForm) {
-        addAtividadeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await adicionarAtividade(new FormData(addAtividadeForm));
-        });
-    }
+// Configurar handlers dos formulários modais
+const addAtividadeForm = document.getElementById('addAtividadeForm');
+if (addAtividadeForm) {
+addAtividadeForm.addEventListener('submit', async (e) => {
+e.preventDefault();
+await adicionarAtividade(new FormData(addAtividadeForm));
+});
+}
 }
 
 // Funções de UI
 function showModal(modalId) {
-    console.log('Abrindo modal:', modalId);
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        if (modalId === 'desativarAtividadeModal') {
-            console.log('Chamando carregarListaAtividades');
-            carregarListaAtividades();
-        }
-    } else {
-        console.error('Modal não encontrado:', modalId);
-    }
+console.log('Abrindo modal:', modalId);
+const modal = document.getElementById(modalId);
+if (modal) {
+modal.style.display = 'flex';
+if (modalId === 'desativarAtividadeModal') {
+console.log('Chamando carregarListaAtividades');
+carregarListaAtividades();
+}
+} else {
+console.error('Modal não encontrado:', modalId);
+}
 }
 
 function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    }
+const modal = document.getElementById(modalId);
+if (modal) {
+modal.style.display = 'none';
+}
 }
 
 function filtrarAtividades(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const atividades = document.querySelectorAll('.atividade-item');
-    
-    atividades.forEach(atividade => {
-        const texto = atividade.querySelector('span').textContent.toLowerCase();
-        atividade.style.display = texto.includes(searchTerm) ? 'flex' : 'none';
-    });
+const searchTerm = e.target.value.toLowerCase();
+const atividades = document.querySelectorAll('.atividade-item');
+
+atividades.forEach(atividade => {
+const texto = atividade.querySelector('span').textContent.toLowerCase();
+atividade.style.display = texto.includes(searchTerm) ? 'flex' : 'none';
+});
 }
 // Funções de cálculo e operações
 function calcularExtra() {
-    const meta = parseFloat(document.getElementById('meta').value) || 0;
-    const realizado = parseFloat(document.getElementById('realizado').value) || 0;
-    const valorUnit = parseFloat(document.getElementById('valorUnit').value) || 0;
-    
-    const extra = Math.max(0, (realizado - meta) * valorUnit);
-    document.getElementById('extra').value = extra.toFixed(2);
+const meta = parseFloat(document.getElementById('meta').value) || 0;
+const realizado = parseFloat(document.getElementById('realizado').value) || 0;
+const valorUnit = parseFloat(document.getElementById('valorUnit').value) || 0;
+
+const extra = Math.max(0, (realizado - meta) * valorUnit);
+document.getElementById('extra').value = extra.toFixed(2);
 }
 
 function calcularHoras() {
-    const tipoApontamento = document.getElementById('tipoApontamento').value;
-    const atividadeSelect = document.getElementById('atividade');
-    const atividadeNome = atividadeSelect.selectedOptions[0]?.textContent || '';
-    const meta = parseFloat(document.getElementById('meta').value) || 0;
-    const realizado = parseFloat(document.getElementById('realizado').value) || 0;
-    const horasInput = document.getElementById('horas');
-    const extraInput = document.getElementById('extra');
+const tipoApontamento = document.getElementById('tipoApontamento').value;
+const atividadeSelect = document.getElementById('atividade');
+const atividadeNome = atividadeSelect.selectedOptions[0]?.textContent || '';
+const meta = parseFloat(document.getElementById('meta').value) || 0;
+const realizado = parseFloat(document.getElementById('realizado').value) || 0;
+const horasInput = document.getElementById('horas');
+const extraInput = document.getElementById('extra');
 
-    // Verificar primeiro se é uma atividade especial
-    if (isAtividadeEspecial(atividadeNome)) {
-        // Todas as atividades especiais agora terão valor 0 para não descontar
-        horasInput.value = '0.00';
-        extraInput.value = '0.00';
-        return;
-    }
+// Verificar primeiro se é uma atividade especial
+if (isAtividadeEspecial(atividadeNome)) {
+// Todas as atividades especiais agora terão valor 0 para não descontar
+horasInput.value = '0.00';
+extraInput.value = '0.00';
+return;
+}
 
-    // Tratamento específico para cada tipo de apontamento
-    let horasCalculadas = 0;
-    let valorBonus = 0;
-    
-    switch (tipoApontamento) {
-        case 'Hora':
-            // Para tipo Hora, calcula apenas se houver horas extras
-            horasCalculadas = Math.max(0, realizado - 8);
-            
-            // Cálculo do valor monetário para horas
-            if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
-                valorBonus = 5; // R$ 5 para até meia hora
-            } else if (horasCalculadas > 0.5) {
-                valorBonus = Math.floor(horasCalculadas) * 10; // R$ 10 por hora completa
-                if (horasCalculadas % 1 > 0) {
-                    valorBonus += 5; // R$ 5 adicional para fração de hora
-                }
-            }
-            break;
+// Tratamento específico para cada tipo de apontamento
+let horasCalculadas = 0;
+let valorBonus = 0;
 
-        case 'Compensado':
-            // Para tipo Compensado, calcula horas proporcionais
-            if (realizado > 0 && meta > 0) {
-                const proporcao = realizado / meta;
-                horasCalculadas = 8 * proporcao;
-                
-                // Também calculamos o valor monetário para compensação
-                if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
-                    valorBonus = 5;
-                } else if (horasCalculadas > 0.5) {
-                    valorBonus = Math.floor(horasCalculadas) * 10;
-                    if (horasCalculadas % 1 > 0) {
-                        valorBonus += 5;
-                    }
-                }
-            }
-            break;
+switch (tipoApontamento) {
+case 'Hora':
+// Para tipo Hora, calcula apenas se houver horas extras
+horasCalculadas = Math.max(0, realizado - 8);
 
-        case 'Meta':
-            // Para tipo Meta, sempre será 8 horas
-            horasCalculadas = 8;
-            // Não calculamos bônus para tipo Meta
-            break;
+// Cálculo do valor monetário para horas
+if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
+valorBonus = 5; // R$ 5 para até meia hora
+} else if (horasCalculadas > 0.5) {
+valorBonus = Math.floor(horasCalculadas) * 10; // R$ 10 por hora completa
+if (horasCalculadas % 1 > 0) {
+valorBonus += 5; // R$ 5 adicional para fração de hora
+}
+}
+break;
 
-        default:
-            horasCalculadas = 0;
-            break;
-    }
-    
-    horasInput.value = horasCalculadas.toFixed(2);
-    
-    // Apenas atualizar o valor extra se for tipo Hora ou Compensado
-    if (tipoApontamento === 'Hora' || tipoApontamento === 'Compensado') {
-        extraInput.value = valorBonus.toFixed(2);
-    }
+case 'Compensado':
+// Para tipo Compensado, calcula horas proporcionais
+if (realizado > 0 && meta > 0) {
+const proporcao = realizado / meta;
+horasCalculadas = 8 * proporcao;
+
+// Também calculamos o valor monetário para compensação
+if (horasCalculadas <= 0.5 && horasCalculadas > 0) {
+valorBonus = 5;
+} else if (horasCalculadas > 0.5) {
+valorBonus = Math.floor(horasCalculadas) * 10;
+if (horasCalculadas % 1 > 0) {
+valorBonus += 5;
+}
+}
+}
+break;
+
+case 'Meta':
+// Para tipo Meta, sempre será 8 horas
+horasCalculadas = 8;
+// Não calculamos bônus para tipo Meta
+break;
+
+default:
+horasCalculadas = 0;
+break;
+}
+
+horasInput.value = horasCalculadas.toFixed(2);
+
+// Apenas atualizar o valor extra se for tipo Hora ou Compensado
+if (tipoApontamento === 'Hora' || tipoApontamento === 'Compensado') {
+extraInput.value = valorBonus.toFixed(2);
+}
 }
 
 function calcularHorasExtras() {
-    const meta = parseFloat(document.getElementById('meta').value) || 8;
-    const realizado = parseFloat(document.getElementById('realizado').value) || 0;
-    const horasInput = document.getElementById('horas');
-    const extraInput = document.getElementById('extra');
-    
-    // Calculando horas extras (parte que já existia)
-    const horasExtras = Math.max(0, realizado - meta);
-    horasInput.value = horasExtras.toFixed(2);
-    
-    // NOVA PARTE: Calculando o valor monetário das horas extras
-    let valorBonus = 0;
-    
-    if (horasExtras > 0) {
-        // Se tiver menos de meia hora (0.5), valor é 5 reais
-        if (horasExtras <= 0.5) {
-            valorBonus = 5;
-        } else {
-            // Para horas completas: 10 reais cada hora
-            valorBonus = Math.floor(horasExtras) * 10;
-            
-            // Se tiver fração de hora acima de hora inteira, adiciona 5 reais
-            if (horasExtras % 1 > 0) {
-                valorBonus += 5;
-            }
-        }
-    }
-    
-    // Definir o valor no campo extra
-    extraInput.value = valorBonus.toFixed(2);
+const meta = parseFloat(document.getElementById('meta').value) || 8;
+const realizado = parseFloat(document.getElementById('realizado').value) || 0;
+const horasInput = document.getElementById('horas');
+const extraInput = document.getElementById('extra');
+
+// Calculando horas extras (parte que já existia)
+const horasExtras = Math.max(0, realizado - meta);
+horasInput.value = horasExtras.toFixed(2);
+
+// NOVA PARTE: Calculando o valor monetário das horas extras
+let valorBonus = 0;
+
+if (horasExtras > 0) {
+// Se tiver menos de meia hora (0.5), valor é 5 reais
+if (horasExtras <= 0.5) {
+valorBonus = 5;
+} else {
+// Para horas completas: 10 reais cada hora
+valorBonus = Math.floor(horasExtras) * 10;
+
+// Se tiver fração de hora acima de hora inteira, adiciona 5 reais
+if (horasExtras % 1 > 0) {
+valorBonus += 5;
+}
+}
+}
+
+// Definir o valor no campo extra
+extraInput.value = valorBonus.toFixed(2);
 }
 
 document.getElementById('tipoApontamento').addEventListener('change', calcularHoras);
@@ -814,444 +611,445 @@ document.getElementById('realizado').addEventListener('input', calcularHoras);
 document.getElementById('meta').addEventListener('input', calcularHoras);
 
 async function registrarApontamento(formData) {
-    try {
-        const atividade = document.getElementById('atividade');
-        const funcionario = document.getElementById('funcionario').value;
-        const dataApontamento = document.getElementById('data').value;
-        const realizado = parseFloat(document.getElementById('realizado').value) || 0;
-        const meta = parseFloat(document.getElementById('meta').value) || 0;
-        const valorUnit = parseFloat(document.getElementById('valorUnit').value) || 0;
-        const valvula = document.getElementById('valvula').value;
-        const tipoApontamento = document.getElementById('tipoApontamento').value;
-        const hora = parseFloat(document.getElementById('horas').value) || 0;
-        const extraAtual = parseFloat(document.getElementById('extra').value) || 0;
+try {
+const atividade = document.getElementById('atividade');
+const funcionario = document.getElementById('funcionario').value;
+const dataApontamento = document.getElementById('data').value;
+const realizado = parseFloat(document.getElementById('realizado').value) || 0;
+const meta = parseFloat(document.getElementById('meta').value) || 0;
+const valorUnit = parseFloat(document.getElementById('valorUnit').value) || 0;
+const valvula = document.getElementById('valvula').value;
+const tipoApontamento = document.getElementById('tipoApontamento').value;
+const hora = parseFloat(document.getElementById('horas').value) || 0;
+const extraAtual = parseFloat(document.getElementById('extra').value) || 0;
 
-        if (!atividade.value || !funcionario || !dataApontamento || !valvula) {
-            alert('Por favor, preencha os campos obrigatórios');
-            return;
-        }
+if (!atividade.value || !funcionario || !dataApontamento || !valvula) {
+alert('Por favor, preencha os campos obrigatórios');
+return;
+}
 
-        // Garantir que todos os valores numéricos sejam números válidos
-        formData.set('meta', meta);
-        formData.set('realizado', realizado);
-        formData.set('valor_unit', valorUnit);
-        formData.set('tipo_apontamento', tipoApontamento);
-        
-        // Tratar campos específicos baseado no tipo de apontamento
-        if (tipoApontamento === 'Meta') {
-            formData.set('hora', '0');
-            const extraValue = Math.max(0, (realizado - meta) * valorUnit);
-            formData.set('extra', extraValue.toFixed(2));
-        } else {
-            // Usar o valor de extra já calculado para Hora e Compensado
-            formData.set('extra', extraAtual.toFixed(2));
-            formData.set('hora', hora.toFixed(2));
-        }
+// Garantir que todos os valores numéricos sejam números válidos
+formData.set('meta', meta);
+formData.set('realizado', realizado);
+formData.set('valor_unit', valorUnit);
+formData.set('tipo_apontamento', tipoApontamento);
 
-        const response = await fetch('/registrar_apontamento', {
-            method: 'POST',
-            body: formData
-        });
+// Tratar campos específicos baseado no tipo de apontamento
+if (tipoApontamento === 'Meta') {
+formData.set('hora', '0');
+const extraValue = Math.max(0, (realizado - meta) * valorUnit);
+formData.set('extra', extraValue.toFixed(2));
+} else {
+// Usar o valor de extra já calculado para Hora e Compensado
+formData.set('extra', extraAtual.toFixed(2));
+formData.set('hora', hora.toFixed(2));
+}
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Erro ao registrar apontamento');
-        }
+const response = await fetch('/registrar_apontamento', {
+method: 'POST',
+body: formData
+});
 
-        const responseData = await response.json();
-        
-        if (responseData.status === 'success') {
-            alert('Apontamento registrado com sucesso!');
-            await carregarUltimosApontamentos();
-            
-            // Preservar campos importantes
-            const funcionarioValue = document.getElementById('funcionario').value;
-            const dataValue = document.getElementById('data').value;
-            const tipoApontamentoValue = document.getElementById('tipoApontamento').value;
-            
-            // Resetar o formulário
-            document.getElementById('registroApontamentoForm').reset();
-            
-            // Restaurar valores que queremos manter
-            document.getElementById('funcionario').value = funcionarioValue;
-            document.getElementById('data').value = dataValue;
-            document.getElementById('tipoApontamento').value = tipoApontamentoValue;
-            
-            // Resetar apenas os campos específicos do apontamento
-            document.getElementById('meta').value = tipoApontamentoValue === 'Hora' ? '8.00' : '';
-            document.getElementById('realizado').value = '';
-            document.getElementById('extra').value = '0.00';
-            document.getElementById('horas').value = '0.00';
-            document.getElementById('valorUnit').value = '';
-            document.getElementById('observacao').value = '';
-            
-            // Manter o campo de atividade focado para o próximo registro
-            document.getElementById('atividade').focus();
+if (!response.ok) {
+const errorData = await response.json();
+throw new Error(errorData.message || 'Erro ao registrar apontamento');
+}
 
-        } else {
-            throw new Error(responseData.message || 'Erro ao registrar apontamento');
-        }
-    } catch (error) {
-        console.error('Erro ao registrar apontamento:', error);
-        alert(`Erro ao registrar apontamento: ${error.message}`);
-    }
+const responseData = await response.json();
+
+if (responseData.status === 'success') {
+alert('Apontamento registrado com sucesso!');
+await carregarUltimosApontamentos();
+
+// Preservar campos importantes
+const funcionarioValue = document.getElementById('funcionario').value;
+const dataValue = document.getElementById('data').value;
+const tipoApontamentoValue = document.getElementById('tipoApontamento').value;
+
+// Resetar o formulário
+document.getElementById('registroApontamentoForm').reset();
+
+// Restaurar valores que queremos manter
+document.getElementById('funcionario').value = funcionarioValue;
+document.getElementById('data').value = dataValue;
+document.getElementById('tipoApontamento').value = tipoApontamentoValue;
+
+// Resetar apenas os campos específicos do apontamento
+document.getElementById('meta').value = tipoApontamentoValue === 'Hora' ? '8.00' : '';
+document.getElementById('realizado').value = '';
+document.getElementById('extra').value = '0.00';
+document.getElementById('horas').value = '0.00';
+document.getElementById('valorUnit').value = '';
+document.getElementById('observacao').value = '';
+
+// Manter o campo de atividade focado para o próximo registro
+document.getElementById('atividade').focus();
+
+} else {
+throw new Error(responseData.message || 'Erro ao registrar apontamento');
+}
+} catch (error) {
+console.error('Erro ao registrar apontamento:', error);
+alert(`Erro ao registrar apontamento: ${error.message}`);
+}
 }
 
 async function adicionarAtividade(formData) {
-    try {
-        const response = await fetch('/adicionar_atividade', {
-            method: 'POST',
-            body: formData
-        });
+try {
+const response = await fetch('/adicionar_atividade', {
+method: 'POST',
+body: formData
+});
 
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            alert('Atividade adicionada com sucesso!');
-            closeModal('addAtividadeModal');
-            document.getElementById('addAtividadeForm').reset();
-            await carregarAtividades();
-            await carregarListaAtividades();
-        } else {
-            alert('Erro: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao adicionar atividade');
-    }
+const data = await response.json();
+
+if (data.status === 'success') {
+alert('Atividade adicionada com sucesso!');
+closeModal('addAtividadeModal');
+document.getElementById('addAtividadeForm').reset();
+await carregarAtividades();
+await carregarListaAtividades();
+} else {
+alert('Erro: ' + data.message);
+}
+} catch (error) {
+console.error('Erro:', error);
+alert('Erro ao adicionar atividade');
+}
 }
 
 async function desativarAtividade(id) {
-    if (!confirm('Tem certeza que deseja desativar esta atividade?')) {
-        return;
-    }
+if (!confirm('Tem certeza que deseja desativar esta atividade?')) {
+return;
+}
 
-    try {
-        const response = await fetch(`/desativar_atividade/${id}`, {
-            method: 'PUT'
-        });
+try {
+const response = await fetch(`/desativar_atividade/${id}`, {
+method: 'PUT'
+});
 
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            alert('Atividade desativada com sucesso!');
-            await carregarListaAtividades();
-            await carregarAtividades();
-        } else {
-            alert('Erro: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao desativar atividade');
-    }
+const data = await response.json();
+
+if (data.status === 'success') {
+alert('Atividade desativada com sucesso!');
+await carregarListaAtividades();
+await carregarAtividades();
+} else {
+alert('Erro: ' + data.message);
+}
+} catch (error) {
+console.error('Erro:', error);
+alert('Erro ao desativar atividade');
+}
 }
 
 // Funções de utilidade
 function showForm() {
+    const formContainer = document.getElementById('apontamentoForm');
+    formContainer.style.display = 'flex';
     showModal('registroModal');
 }
 
 // Funções para download de planilhas
 async function downloadPlanilha(tipo) {
-    const loadingDiv = showLoading();
-    
-    try {
-        const response = await fetch(`/download_apontamento/${tipo}`);
-        if (!response.ok) throw new Error('Erro ao gerar planilha');
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `apontamento_${tipo}_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        closeModal('downloadModal');
-        
-    } catch (error) {
-        alert('Erro ao baixar planilha: ' + error.message);
-    } finally {
-        document.body.removeChild(loadingDiv);
-    }
+const loadingDiv = showLoading();
+
+try {
+const response = await fetch(`/download_apontamento/${tipo}`);
+if (!response.ok) throw new Error('Erro ao gerar planilha');
+
+const blob = await response.blob();
+const url = window.URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `apontamento_${tipo}_${new Date().toISOString().split('T')[0]}.xlsx`;
+document.body.appendChild(a);
+a.click();
+window.URL.revokeObjectURL(url);
+document.body.removeChild(a);
+closeModal('downloadModal');
+
+} catch (error) {
+alert('Erro ao baixar planilha: ' + error.message);
+} finally {
+document.body.removeChild(loadingDiv);
+}
 }
 
 function showLoading() {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'loading-overlay';
-    loadingDiv.innerHTML = `
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <div>Gerando planilha...</div>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-    return loadingDiv;
+const loadingDiv = document.createElement('div');
+loadingDiv.className = 'loading-overlay';
+loadingDiv.innerHTML = `
+       <div class="loading-content">
+           <div class="loading-spinner"></div>
+           <div>Gerando planilha...</div>
+       </div>
+   `;
+document.body.appendChild(loadingDiv);
+return loadingDiv;
 }
 
 function showResumoModal() {
-    closeModal('downloadModal');
-    showModal('resumoModal');
-    
-    // Só vamos definir as datas se elas ainda não estiverem preenchidas
-    const dataInicial = document.getElementById('dataInicial');
-    const dataFinal = document.getElementById('dataFinal');
-    
-    if (!dataInicial.value || !dataFinal.value) {
-        // Configurar datas iniciais apenas se estiverem vazias
-        const hoje = new Date();
-        const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-        
-        // Formatar as datas para YYYY-MM-DD
-        const dataInicialPadrao = primeiroDiaMes.toISOString().split('T')[0];
-        const dataFinalPadrao = ultimoDiaMes.toISOString().split('T')[0];
-        
-        // Definir valores padrão apenas se estiverem vazios
-        dataInicial.value = dataInicialPadrao;
-        dataFinal.value = dataFinalPadrao;
-    }
+closeModal('downloadModal');
+showModal('resumoModal');
+
+// Só vamos definir as datas se elas ainda não estiverem preenchidas
+const dataInicial = document.getElementById('dataInicial');
+const dataFinal = document.getElementById('dataFinal');
+
+if (!dataInicial.value || !dataFinal.value) {
+// Configurar datas iniciais apenas se estiverem vazias
+const hoje = new Date();
+const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+// Formatar as datas para YYYY-MM-DD
+const dataInicialPadrao = primeiroDiaMes.toISOString().split('T')[0];
+const dataFinalPadrao = ultimoDiaMes.toISOString().split('T')[0];
+
+// Definir valores padrão apenas se estiverem vazios
+dataInicial.value = dataInicialPadrao;
+dataFinal.value = dataFinalPadrao;
+}
 }
 
 document.getElementById('resumoForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const dataInicialInput = document.getElementById('dataInicial');
-    const dataFinalInput = document.getElementById('dataFinal');
-    
-    if (!dataInicialInput.value || !dataFinalInput.value) {
-        alert('Por favor, selecione as datas inicial e final');
-        return;
-    }
+e.preventDefault();
 
-    const loadingDiv = showLoading();
-    try {
-        const response = await fetch(`/download_apontamento/resumo?dataInicial=${dataInicialInput.value}&dataFinal=${dataFinalInput.value}`);
-        const contentType = response.headers.get('content-type');
+const dataInicialInput = document.getElementById('dataInicial');
+const dataFinalInput = document.getElementById('dataFinal');
 
-        if (contentType && contentType.includes('application/json')) {
-            // Se a resposta for JSON, provavelmente é um erro
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Não foram encontrados registros para o período selecionado');
-        }
+if (!dataInicialInput.value || !dataFinalInput.value) {
+alert('Por favor, selecione as datas inicial e final');
+return;
+}
 
-        if (!response.ok) {
-            throw new Error('Erro ao gerar planilha');
-        }
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `apontamento_resumo_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        closeModal('resumoModal');
-        
-    } catch (error) {
-        console.error('Erro:', error);
-        alert(error.message || 'Erro ao gerar planilha de resumo');
-    } finally {
-        document.body.removeChild(loadingDiv);
-    }
+const loadingDiv = showLoading();
+try {
+const response = await fetch(`/download_apontamento/resumo?dataInicial=${dataInicialInput.value}&dataFinal=${dataFinalInput.value}`);
+const contentType = response.headers.get('content-type');
+
+if (contentType && contentType.includes('application/json')) {
+// Se a resposta for JSON, provavelmente é um erro
+const errorData = await response.json();
+throw new Error(errorData.error || 'Não foram encontrados registros para o período selecionado');
+}
+
+if (!response.ok) {
+throw new Error('Erro ao gerar planilha');
+}
+
+const blob = await response.blob();
+const url = window.URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `apontamento_resumo_${new Date().toISOString().split('T')[0]}.xlsx`;
+document.body.appendChild(a);
+a.click();
+window.URL.revokeObjectURL(url);
+document.body.removeChild(a);
+closeModal('resumoModal');
+
+} catch (error) {
+console.error('Erro:', error);
+alert(error.message || 'Erro ao gerar planilha de resumo');
+} finally {
+document.body.removeChild(loadingDiv);
+}
 });
 
 async function carregarUltimosApontamentos(page = 1) {
-    try {
-        const response = await fetch(`/get_ultimos_apontamentos_paginado?page=${page}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            currentPage = data.current_page;
-            totalPages = data.total_pages;
-            
-            renderizarUltimosRegistros(data.apontamentos);
-            
-            // Atualizar os botões de paginação
-            document.getElementById('prev-page').disabled = currentPage === 1;
-            document.getElementById('next-page').disabled = currentPage === totalPages;
-            document.getElementById('current-page').textContent = currentPage;
-            document.getElementById('total-pages').textContent = totalPages;
-        }
-    } catch (error) {
-        console.error('Erro ao carregar apontamentos:', error);
-    }
+try {
+const response = await fetch(`/get_ultimos_apontamentos_paginado?page=${page}`, {
+method: 'GET',
+headers: {
+'Accept': 'application/json'
+}
+});
+const data = await response.json();
+
+if (data.status === 'success') {
+currentPage = data.current_page;
+totalPages = data.total_pages;
+
+renderizarUltimosRegistros(data.apontamentos);
+
+// Atualizar os botões de paginação
+document.getElementById('prev-page').disabled = currentPage === 1;
+document.getElementById('next-page').disabled = currentPage === totalPages;
+document.getElementById('current-page').textContent = currentPage;
+document.getElementById('total-pages').textContent = totalPages;
+}
+} catch (error) {
+console.error('Erro ao carregar apontamentos:', error);
+}
 }
 
 function setupPaginationHandlers() {
-    document.getElementById('prev-page').addEventListener('click', () => {
-        if (currentPage > 1) {
-            carregarUltimosApontamentos(currentPage - 1);
-        }
-    });
-    
-    document.getElementById('next-page').addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            carregarUltimosApontamentos(currentPage + 1);
-        }
-    });
+document.getElementById('prev-page').addEventListener('click', () => {
+if (currentPage > 1) {
+carregarUltimosApontamentos(currentPage - 1);
+}
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+if (currentPage < totalPages) {
+carregarUltimosApontamentos(currentPage + 1);
+}
+});
 }
 
 async function excluirApontamento(id) {
-    if (!confirm('Tem certeza que deseja excluir este apontamento?')) {
-        return;
-    }
+if (!confirm('Tem certeza que deseja excluir este apontamento?')) {
+return;
+}
 
-    try {
-        const response = await fetch(`/excluir_apontamento/${id}`, {
-            method: 'DELETE'
-        });
+try {
+const response = await fetch(`/excluir_apontamento/${id}`, {
+method: 'DELETE'
+});
 
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            alert('Apontamento excluído com sucesso!');
-            carregarUltimosApontamentos(currentPage);
-        } else {
-            alert('Erro: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao excluir apontamento');
-    }
+const data = await response.json();
+
+if (data.status === 'success') {
+alert('Apontamento excluído com sucesso!');
+carregarUltimosApontamentos(currentPage);
+} else {
+alert('Erro: ' + data.message);
+}
+} catch (error) {
+console.error('Erro:', error);
+alert('Erro ao excluir apontamento');
+}
 }
 
 function renderizarUltimosRegistros(registros) {
-    const container = document.getElementById('registros-list');
-    if (!container) return;
+const container = document.getElementById('registros-list');
+if (!container) return;
 
-    container.innerHTML = registros.map(registro => {
-        // Função para pegar apenas primeiro e último nome
-        const formatarNome = (nomeCompleto) => {
-            const nomes = nomeCompleto.split(' ');
-            if (nomes.length > 1) {
-                return `${nomes[0]} ${nomes[nomes.length - 1]}`;
-            }
-            return nomes[0];
-        };
+container.innerHTML = registros.map(registro => {
+// Função para pegar apenas primeiro e último nome
+const formatarNome = (nomeCompleto) => {
+const nomes = nomeCompleto.split(' ');
+if (nomes.length > 1) {
+return `${nomes[0]} ${nomes[nomes.length - 1]}`;
+}
+return nomes[0];
+};
 
-        // Define a classe CSS para o extra
-        let extraClass = '';
-        
-        // Calcular valor monetário das horas extras
-        let extraValue = registro.extra;
-        let horaExtra = parseFloat(registro.hora) || 0;
-        
-        // Se for atividade "FALTA", mantém o valor negativo
-        if (registro.atividade.toUpperCase() === 'FALTA') {
-            extraClass = 'negativo';
-        } 
-        // Para apontamentos com horas extras, calcular o valor monetário
-        else if (horaExtra > 0) {
-            // Aplicar regra de negócio para horas extras
-            let valorMonetario = 0;
-            if (horaExtra <= 0.5) {
-                valorMonetario = 5; // R$ 5,00 para até meia hora
-            } else {
-                valorMonetario = Math.floor(horaExtra) * 10; // R$ 10,00 por hora completa
-                if (horaExtra % 1 > 0) {
-                    valorMonetario += 5; // Adiciona R$ 5,00 para fração de hora
-                }
-            }
-            extraValue = valorMonetario;
-            extraClass = 'positivo';
-        }
-        // Para atividades tipo Meta ou outros casos
-        else if (extraValue > 0) {
-            extraClass = 'positivo';
-        }
+// Define a classe CSS para o extra
+let extraClass = '';
 
-        return `
-            <div class="registro-item">
-                <div>${new Date(registro.data + 'T00:00:00').toLocaleDateString('pt-BR', {
-                    timeZone: 'UTC'
-                })}</div>
-                <div>${formatarNome(registro.funcionario)}</div>
-                <div>${registro.atividade}</div>
-                <div class="registro-valor">${registro.meta.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                <div class="registro-valor">${registro.realizado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                <div class="registro-valor">${registro.hora ? registro.hora.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '0.00'}</div>
-                <div class="registro-valor ${extraClass}">
-                    R$ ${Math.abs(extraValue).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                </div>
-                <button onclick="excluirApontamento(${registro.id})" class="delete-button">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
+// Calcular valor monetário das horas extras
+let extraValue = registro.extra;
+let horaExtra = parseFloat(registro.hora) || 0;
+
+// Se for atividade "FALTA", mantém o valor negativo
+if (registro.atividade.toUpperCase() === 'FALTA') {
+extraClass = 'negativo';
+} 
+// Para apontamentos com horas extras, calcular o valor monetário
+else if (horaExtra > 0) {
+// Aplicar regra de negócio para horas extras
+let valorMonetario = 0;
+if (horaExtra <= 0.5) {
+valorMonetario = 5; // R$ 5,00 para até meia hora
+} else {
+valorMonetario = Math.floor(horaExtra) * 10; // R$ 10,00 por hora completa
+if (horaExtra % 1 > 0) {
+valorMonetario += 5; // Adiciona R$ 5,00 para fração de hora
+}
+}
+extraValue = valorMonetario;
+extraClass = 'positivo';
+}
+// Para atividades tipo Meta ou outros casos
+else if (extraValue > 0) {
+extraClass = 'positivo';
+}
+
+return `
+           <div class="registro-item">
+               <div>${new Date(registro.data + 'T00:00:00').toLocaleDateString('pt-BR', {
+                   timeZone: 'UTC'
+               })}</div>
+               <div>${formatarNome(registro.funcionario)}</div>
+               <div>${registro.atividade}</div>
+               <div class="registro-valor">${registro.meta.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+               <div class="registro-valor">${registro.realizado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+               <div class="registro-valor">${registro.hora ? registro.hora.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '0.00'}</div>
+               <div class="registro-valor ${extraClass}">
+                   R$ ${Math.abs(extraValue).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+               </div>
+               <button onclick="excluirApontamento(${registro.id})" class="delete-button">
+                   <i class="fas fa-trash"></i>
+               </button>
+           </div>
+       `;
+}).join('');
 }
 
 document.getElementById('registroLoteForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    try {
-        const formData = new FormData(this);
-        const dataInicial = new Date(formData.get('data_inicial'));
-        const dataFinal = new Date(formData.get('data_final'));
-        const funcionarioId = formData.get('funcionario_id');
-        const atividadeId = formData.get('atividade_id');
-        
-        // Itera sobre cada dia no intervalo
-        for (let data = new Date(dataInicial); data <= dataFinal; data.setDate(data.getDate() + 1)) {
-            // Pula finais de semana
-            if (data.getDay() === 0 || data.getDay() === 6) continue;
-            
-            const dadosApontamento = new FormData();
-            dadosApontamento.append('funcionario_id', funcionarioId);
-            dadosApontamento.append('atividade_id', atividadeId);
-            dadosApontamento.append('data', data.toISOString().split('T')[0]);
-            dadosApontamento.append('tipo_apontamento', 'Meta');
-            dadosApontamento.append('meta', '1');
-            dadosApontamento.append('realizado', '1');
-            dadosApontamento.append('valvula', '33'); // Válvula ADM
-            
-            await fetch('/registrar_apontamento', {
-                method: 'POST',
-                body: dadosApontamento
-            });
-        }
-        
-        alert('Registros em lote realizados com sucesso!');
-        closeModal('registroLoteModal');
-        carregarUltimosApontamentos();
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao realizar registros em lote');
-    }
+e.preventDefault();
+
+try {
+const formData = new FormData(this);
+const dataInicial = new Date(formData.get('data_inicial'));
+const dataFinal = new Date(formData.get('data_final'));
+const funcionarioId = formData.get('funcionario_id');
+const atividadeId = formData.get('atividade_id');
+
+// Itera sobre cada dia no intervalo
+for (let data = new Date(dataInicial); data <= dataFinal; data.setDate(data.getDate() + 1)) {
+// Pula finais de semana
+if (data.getDay() === 0 || data.getDay() === 6) continue;
+
+const dadosApontamento = new FormData();
+dadosApontamento.append('funcionario_id', funcionarioId);
+dadosApontamento.append('atividade_id', atividadeId);
+dadosApontamento.append('data', data.toISOString().split('T')[0]);
+dadosApontamento.append('tipo_apontamento', 'Meta');
+dadosApontamento.append('meta', '1');
+dadosApontamento.append('realizado', '1');
+dadosApontamento.append('valvula', '33'); // Válvula ADM
+
+await fetch('/registrar_apontamento', {
+method: 'POST',
+body: dadosApontamento
+});
+}
+
+alert('Registros em lote realizados com sucesso!');
+closeModal('registroLoteModal');
+carregarUltimosApontamentos();
+} catch (error) {
+console.error('Erro:', error);
+alert('Erro ao realizar registros em lote');
+}
 });
 
 // Função para carregar apenas atividades específicas no select de lote
 async function carregarAtividadesLote() {
-    try {
-        const response = await fetch('/get_atividades');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const select = document.getElementById('atividadeLote');
-            select.innerHTML = '<option value="">Selecione o tipo</option>';
-            
-            const atividadesPermitidas = ['FÉRIAS', 'FOLGA', 'ATESTADO', 'COMPENSAÇÃO', 'FALTA'];
-            
-            data.atividades
-                .filter(atividade => atividadesPermitidas.includes(atividade.atividade.toUpperCase()))
-                .forEach(atividade => {
-                    const option = document.createElement('option');
-                    option.value = atividade.id;
-                    option.textContent = atividade.atividade;
-                    select.appendChild(option);
-                });
-        }
-    } catch (error) {
-        console.error('Erro ao carregar atividades:', error);
-    }
-}
+try {
+const response = await fetch('/get_atividades');
+const data = await response.json();
 
+if (data.status === 'success') {
+const select = document.getElementById('atividadeLote');
+select.innerHTML = '<option value="">Selecione o tipo</option>';
+
+const atividadesPermitidas = ['FÉRIAS', 'FOLGA', 'ATESTADO', 'COMPENSAÇÃO', 'FALTA'];
+
+data.atividades
+.filter(atividade => atividadesPermitidas.includes(atividade.atividade.toUpperCase()))
+.forEach(atividade => {
+const option = document.createElement('option');
+option.value = atividade.id;
+option.textContent = atividade.atividade;
+select.appendChild(option);
+});
+}
+} catch (error) {
+console.error('Erro ao carregar atividades:', error);
+}
+}

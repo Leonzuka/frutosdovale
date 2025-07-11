@@ -46,54 +46,23 @@ let currentPage = 1;
 let totalPages = 1;
 let maxPagesShow = 8;
 
-// ===== FUNÇÕES DE FILTRO =====
-function filtrarProdutos() {
-    const searchInput = document.getElementById('searchProduto');
-    if (!searchInput) return;
-    
-    const searchTerm = searchInput.value.toLowerCase();
-    const produtos = document.querySelectorAll('#listaProdutos .produto-item');
-
-    produtos.forEach(produto => {
-        const nome = produto.querySelector('span').textContent.toLowerCase();
-        produto.style.display = nome.includes(searchTerm) ? 'flex' : 'none';
-    });
-}
-
-// ===== TOGGLE DE CAMPOS =====
-function toggleCampos() {
-    const tipoMovimento = document.getElementById('tipo_movimento');
-    if (!tipoMovimento) return;
-    
-    const lojaGroup = document.querySelector('.form-group:has(#loja)');
-    const valorGroup = document.querySelector('.form-group:has(#valor_unitario)');
-    const lojaInput = document.getElementById('loja');
-    const valorInput = document.getElementById('valor_unitario');
-
-    if (tipoMovimento.value === 'SAIDA') {
-        if (lojaGroup) lojaGroup.style.display = 'none';
-        if (valorGroup) valorGroup.style.display = 'none';
-        if (lojaInput) lojaInput.removeAttribute('required');
-        if (valorInput) valorInput.removeAttribute('required');
-    } else {
-        if (lojaGroup) lojaGroup.style.display = 'block';
-        if (valorGroup) valorGroup.style.display = 'block';
-        if (lojaInput) lojaInput.setAttribute('required', '');
-        if (valorInput) valorInput.setAttribute('required', '');
-    }
-}
-
 // ===== INICIALIZAÇÃO DA PÁGINA =====
 function initializePage() {
-    // Atualizar data e ano
+    console.log('Inicializando página de estoque...');
+    
+    // Atualizar data e ano no cabeçalho
     const dateDisplay = document.getElementById('current-date');
     const yearDisplay = document.getElementById('current-year');
     
     const currentDate = new Date();
-    if (dateDisplay) dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
-    if (yearDisplay) yearDisplay.textContent = currentDate.getFullYear();
-
-    // Adiciona listeners para os cards
+    if (dateDisplay) {
+        dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+    }
+    if (yearDisplay) {
+        yearDisplay.textContent = currentDate.getFullYear();
+    }
+    
+    // Adicionar listeners para os cards de ação
     const cards = document.querySelectorAll('.action-card');
     cards.forEach(card => {
         card.addEventListener('click', (e) => {
@@ -117,18 +86,206 @@ function initializePage() {
     });
 }
 
-// ===== CARREGAMENTO DE DADOS =====
+// ===== CARREGAMENTO DE DADOS PRINCIPAL (CORRIGIDO) =====
 async function carregarDados() {
+    console.log('Carregando todos os dados da página...');
+    
     try {
+        // Carregar dados em paralelo
         await Promise.all([
             carregarProdutos(),
             carregarLojas(),
             carregarFuncionarios(),
+            carregarEstatisticas(),           // ADICIONADO
+            carregarMovimentacoesRecentes(),  // ADICIONADO
             carregarUltimasMovimentacoes(1)
         ]);
+        
+        console.log('Todos os dados carregados com sucesso!');
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
     }
+}
+
+// ===== CARREGAR ESTATÍSTICAS DO DASHBOARD =====
+async function carregarEstatisticas() {
+    try {
+        console.log('Carregando estatísticas do estoque...');
+        
+        const response = await fetch('/get_estatisticas_estoque');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const stats = data.estatisticas;
+            
+            // Atualizar produtos ativos
+            const totalProdutosEl = document.getElementById('total-produtos');
+            if (totalProdutosEl) {
+                totalProdutosEl.textContent = stats.produtos.ativos || 0;
+            }
+            
+            // Atualizar movimentações de hoje
+            const totalMovimentacoesEl = document.getElementById('total-movimentacoes');
+            if (totalMovimentacoesEl) {
+                totalMovimentacoesEl.textContent = stats.movimentacoes_hoje.total || 0;
+            }
+            
+            // Atualizar valor total do estoque
+            const valorTotalEl = document.getElementById('valor-total');
+            if (valorTotalEl) {
+                const valor = parseFloat(stats.valor_total_estoque || 0);
+                valorTotalEl.textContent = 'R$ ' + valor.toLocaleString('pt-BR', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                });
+            }
+            
+            // Atualizar produtos em alerta
+            const produtosAlertaEl = document.getElementById('produtos-alerta');
+            if (produtosAlertaEl) {
+                produtosAlertaEl.textContent = stats.produtos_alerta || 0;
+            }
+            
+            // Atualizar mini stats dos cards (entradas e saídas hoje)
+            const entradasHojeEl = document.getElementById('entradas-hoje');
+            if (entradasHojeEl) {
+                entradasHojeEl.textContent = stats.movimentacoes_hoje.entradas || 0;
+            }
+            
+            const saidasHojeEl = document.getElementById('saidas-hoje');
+            if (saidasHojeEl) {
+                saidasHojeEl.textContent = stats.movimentacoes_hoje.saidas || 0;
+            }
+            
+            console.log('Estatísticas carregadas com sucesso!');
+            
+        } else {
+            console.error('Erro ao carregar estatísticas:', data.message);
+            setDefaultStatValues();
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+        setDefaultStatValues();
+    }
+}
+
+// ===== CARREGAR MOVIMENTAÇÕES RECENTES =====
+async function carregarMovimentacoesRecentes() {
+    try {
+        console.log('Carregando movimentações recentes...');
+        
+        const response = await fetch('/get_movimentacoes_recentes');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const container = document.getElementById('recent-movements');
+            if (!container) {
+                console.log('Container recent-movements não encontrado');
+                return;
+            }
+            
+            if (data.movimentacoes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Nenhuma movimentação recente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Renderizar movimentações recentes (máximo 5)
+            container.innerHTML = data.movimentacoes.slice(0, 5).map(mov => {
+                const dataFormatada = new Date(mov.data).toLocaleDateString('pt-BR');
+                const horaFormatada = new Date(mov.data).toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                return `
+                    <div class="movement-card ${mov.tipo_movimento.toLowerCase()}">
+                        <div class="movement-icon">
+                            <i class="fas fa-${mov.tipo_movimento === 'ENTRADA' ? 'arrow-down' : 'arrow-up'}"></i>
+                        </div>
+                        <div class="movement-content">
+                            <div class="movement-header">
+                                <span class="movement-type ${mov.tipo_movimento.toLowerCase()}">${mov.tipo_movimento}</span>
+                                <span class="movement-date">${dataFormatada} ${horaFormatada}</span>
+                            </div>
+                            <div class="movement-details">
+                                <span class="movement-product">${mov.produto_nome}</span>
+                                <span class="movement-quantity">${mov.quantidade} ${mov.unidade}</span>
+                                ${mov.valor_unitario ? `<span class="movement-value">R$ ${mov.valor_unitario.toFixed(2)}</span>` : ''}
+                            </div>
+                            <div class="movement-footer">
+                                <span class="movement-employee">Por: ${mov.funcionario_nome}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            console.log('Movimentações recentes carregadas com sucesso!');
+            
+        } else {
+            console.error('Erro ao carregar movimentações recentes:', data.message);
+            const container = document.getElementById('recent-movements');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Erro ao carregar movimentações</p>
+                    </div>
+                `;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar movimentações recentes:', error);
+        const container = document.getElementById('recent-movements');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erro ao carregar movimentações</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// ===== FUNÇÃO PARA VALORES PADRÃO EM CASO DE ERRO =====
+function setDefaultStatValues() {
+    const elementos = [
+        { id: 'total-produtos', valor: '0' },
+        { id: 'total-movimentacoes', valor: '0' },
+        { id: 'valor-total', valor: 'R$ 0,00' },
+        { id: 'produtos-alerta', valor: '0' },
+        { id: 'entradas-hoje', valor: '0' },
+        { id: 'saidas-hoje', valor: '0' }
+    ];
+    
+    elementos.forEach(elem => {
+        const el = document.getElementById(elem.id);
+        if (el) {
+            el.textContent = elem.valor;
+        }
+    });
+}
+
+// ===== FUNÇÕES DE FILTRO =====
+function filtrarProdutos() {
+    const searchInput = document.getElementById('searchProduto');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const produtos = document.querySelectorAll('#listaProdutos .produto-item');
+
+    produtos.forEach(produto => {
+        const nome = produto.querySelector('span').textContent.toLowerCase();
+        produto.style.display = nome.includes(searchTerm) ? 'block' : 'none';
+    });
 }
 
 // ===== PRODUTOS =====
@@ -146,7 +303,7 @@ async function carregarProdutos() {
                     if (produto.ativo === 1) {
                         const option = document.createElement('option');
                         option.value = produto.id;
-                        option.textContent = `${produto.nome} (${produto.tipo})`;
+                        option.textContent = `${produto.produto} (${produto.tipo})`;
                         option.dataset.classificacao = produto.classificacao;
                         produtoSelect.appendChild(option);
                     }
@@ -295,77 +452,12 @@ function setupFormHandlers() {
     } else {
         console.log('Formulário addLojaForm não encontrado');
     }
-    
-    // Adicionar listener para mudança de produto
-    const produtoSelect = document.getElementById('produto');
-    if (produtoSelect) {
-        produtoSelect.addEventListener('change', mostrarClassificacaoProduto);
-    }
-}
-
-// ===== MOSTRAR CLASSIFICAÇÃO DO PRODUTO =====
-function mostrarClassificacaoProduto() {
-    const produtoSelect = document.getElementById('produto');
-    const classificacaoDiv = document.getElementById('classificacaoProduto');
-    
-    if (!produtoSelect || !classificacaoDiv) return;
-    
-    const selectedOption = produtoSelect.options[produtoSelect.selectedIndex];
-    
-    if (selectedOption && selectedOption.value) {
-        const classificacao = selectedOption.dataset.classificacao;
-        if (classificacao) {
-            classificacaoDiv.style.display = 'block';
-            classificacaoDiv.innerHTML = `
-                <span class="classification-badge">
-                    <i class="fas fa-tag"></i>
-                    ${classificacao}
-                </span>
-            `;
-        } else {
-            classificacaoDiv.style.display = 'none';
-        }
-    } else {
-        classificacaoDiv.style.display = 'none';
-    }
-}
-
-// ===== MODAL FUNCTIONS =====
-function showModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) {
-        console.error(`Modal com ID '${modalId}' não encontrado`);
-        alert('Esta funcionalidade ainda não está disponível.');
-        return;
-    }
-    
-    modal.style.display = 'block';
-    
-    // Só chamar setupPaginationHandlers se o modal tiver paginação
-    if (modalId === 'registroModal') {
-        setTimeout(() => {
-            setupPaginationHandlers();
-        }, 100);
-    }
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    }
 }
 
 // ===== REGISTRAR MOVIMENTAÇÃO =====
 async function registrarMovimentacao(formData) {
     try {
-        // Se for saída, remove os campos de loja e valor unitário
-        if (formData.get('tipo_movimento') === 'SAIDA') {
-            formData.delete('loja_id');
-            formData.delete('valor_unitario');
-        }
-
-        const response = await fetch('/registrar_estoque', {
+        const response = await fetch('/adicionar_movimentacao', {
             method: 'POST',
             body: formData
         });
@@ -374,17 +466,14 @@ async function registrarMovimentacao(formData) {
         
         if (data.status === 'success') {
             alert('Movimentação registrada com sucesso!');
-            // Limpar formulário
-            const form = document.getElementById('registroForm');
-            if (form) form.reset();
-            // Definir data atual novamente
-            const dataInput = document.getElementById('data');
-            if (dataInput) dataInput.valueAsDate = new Date();
-            // Atualizar lista
-            carregarUltimasMovimentacoes(1);
-            // Limpar classificação
-            const classificacaoDiv = document.getElementById('classificacaoProduto');
-            if (classificacaoDiv) classificacaoDiv.style.display = 'none';
+            closeModal('registroModal');
+            document.getElementById('registroForm').reset();
+            
+            // Recarregar dados
+            await carregarEstatisticas();
+            await carregarMovimentacoesRecentes();
+            await carregarUltimasMovimentacoes(1);
+            
         } else {
             alert('Erro: ' + data.message);
         }
@@ -407,8 +496,7 @@ async function adicionarProduto(formData) {
         if (data.status === 'success') {
             alert('Produto adicionado com sucesso!');
             closeModal('addProdutoModal');
-            const form = document.getElementById('addProdutoForm');
-            if (form) form.reset();
+            document.getElementById('addProdutoForm').reset();
             await carregarProdutos();
         } else {
             alert('Erro: ' + data.message);
@@ -416,6 +504,30 @@ async function adicionarProduto(formData) {
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao adicionar produto');
+    }
+}
+
+// ===== ADICIONAR LOJA =====
+async function adicionarLoja(formData) {
+    try {
+        const response = await fetch('/adicionar_loja', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            alert('Loja adicionada com sucesso!');
+            closeModal('addLojaModal');
+            document.getElementById('addLojaForm').reset();
+            await carregarLojas();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao adicionar loja');
     }
 }
 
@@ -441,31 +553,6 @@ async function removerProduto(id) {
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao remover produto');
-    }
-}
-
-// ===== ADICIONAR LOJA =====
-async function adicionarLoja(formData) {
-    try {
-        const response = await fetch('/adicionar_loja', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            alert('Loja adicionada com sucesso!');
-            closeModal('addLojaModal');
-            const form = document.getElementById('addLojaForm');
-            if (form) form.reset();
-            await carregarLojas();
-        } else {
-            alert('Erro: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao adicionar loja');
     }
 }
 
@@ -554,111 +641,99 @@ function renderizarPaginacao() {
     }
     
     // Botão Anterior
-    buttons.push(`<button ${currentPage === 1 ? 'disabled' : ''} onclick="carregarUltimasMovimentacoes(${currentPage - 1})">❮</button>`);
+    buttons.push(`<button ${currentPage === 1 ? 'disabled' : ''} onclick="carregarUltimasMovimentacoes(${currentPage - 1})">
+        <i class="fas fa-chevron-left"></i> Anterior
+    </button>`);
     
     // Páginas
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            buttons.push(`<button onclick="carregarUltimasMovimentacoes(${i})" ${currentPage === i ? 'class="active"' : ''}>${i}</button>`);
-        } else if (i === currentPage - 3 || i === currentPage + 3) {
-            buttons.push('<span>...</span>');
-        }
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesShow - 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        buttons.push(`<button ${i === currentPage ? 'class="active"' : ''} onclick="carregarUltimasMovimentacoes(${i})">
+            ${i}
+        </button>`);
     }
     
-    // Botão Próxima
-    buttons.push(`<button ${currentPage === totalPages ? 'disabled' : ''} onclick="carregarUltimasMovimentacoes(${currentPage + 1})">❯</button>`);
+    // Botão Próximo
+    buttons.push(`<button ${currentPage === totalPages ? 'disabled' : ''} onclick="carregarUltimasMovimentacoes(${currentPage + 1})">
+        Próximo <i class="fas fa-chevron-right"></i>
+    </button>`);
     
     paginationContainer.innerHTML = buttons.join('');
 }
 
-function setupPaginationHandlers() {
-    const prevButton = document.getElementById('prev-page');
-    const nextButton = document.getElementById('next-page');
-    
-    if (prevButton) {
-        prevButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                carregarUltimasMovimentacoes(currentPage - 1);
-            }
-        });
-    }
-    
-    if (nextButton) {
-        nextButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                carregarUltimasMovimentacoes(currentPage + 1);
-            }
-        });
-    }
-}
-
 // ===== EXCLUIR MOVIMENTAÇÃO =====
 async function excluirMovimentacao(id) {
-    if (!confirm('Tem certeza que deseja excluir este registro?')) {
+    if (!confirm('Tem certeza que deseja excluir esta movimentação?')) {
         return;
     }
-
+    
     try {
         const response = await fetch(`/excluir_movimentacao/${id}`, {
             method: 'DELETE'
         });
-
+        
         const data = await response.json();
         
         if (data.status === 'success') {
-            alert('Registro excluído com sucesso!');
+            alert('Movimentação excluída com sucesso!');
             await carregarUltimasMovimentacoes(currentPage);
+            await carregarEstatisticas();
+            await carregarMovimentacoesRecentes();
         } else {
             alert('Erro: ' + data.message);
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao excluir registro');
+        alert('Erro ao excluir movimentação');
     }
 }
 
-// ===== DOWNLOAD DE PLANILHAS =====
-async function downloadPlanilha(tipo) {
-    const loadingDiv = showLoading();
+// ===== FUNÇÕES DE MODAL =====
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// ===== TOGGLE CAMPOS =====
+function toggleCampos() {
+    const tipoMovimento = document.getElementById('tipo_movimento');
+    const lojaGroup = document.querySelector('.form-group:has(#loja)');
+    const valorGroup = document.querySelector('.form-group:has(#valor_unitario)');
     
-    try {
-        const response = await fetch(`/download_estoque/${tipo}`);
-        if (!response.ok) throw new Error('Erro ao gerar planilha');
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `estoque_${tipo}_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        closeModal('downloadModal');
-        
-    } catch (error) {
-        alert('Erro ao baixar planilha: ' + error.message);
-    } finally {
-        if (loadingDiv && loadingDiv.parentNode) {
-            document.body.removeChild(loadingDiv);
+    if (tipoMovimento && lojaGroup && valorGroup) {
+        if (tipoMovimento.value === 'ENTRADA') {
+            lojaGroup.style.display = 'block';
+            valorGroup.style.display = 'block';
+        } else {
+            lojaGroup.style.display = 'none';
+            valorGroup.style.display = 'none';
         }
     }
 }
 
-function showLoading() {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'loading-overlay';
-    loadingDiv.innerHTML = `
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <div>Gerando planilha...</div>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-    return loadingDiv;
-}
-
-// ===== FUNÇÃO DE SUPORTE =====
-function mostrarEmailSuporte() {
-    alert('Para suporte, envie um email para: suporte@frutosdovale.com.br');
+// ===== DOWNLOAD DE PLANILHA =====
+function downloadPlanilha(tipo) {
+    const urls = {
+        'completo': '/download_estoque/movimentacoes',
+        'resumo': '/download_estoque/produtos',
+        'mensal': '/download_estoque/resumo'
+    };
+    
+    if (urls[tipo]) {
+        window.location.href = urls[tipo];
+        closeModal('downloadModal');
+    }
 }
