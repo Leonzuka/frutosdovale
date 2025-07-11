@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificar se estamos na página correta antes de inicializar
+    const isEstoquePage = document.getElementById('listaProdutos') || 
+                         document.getElementById('registroForm') ||
+                         document.getElementById('searchProduto');
+    
+    if (!isEstoquePage) {
+        console.log('Não é a página de estoque, pulando inicialização');
+        return;
+    }
+    
     initializePage();
     carregarDados();
     setupFormHandlers();
@@ -13,6 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const tipoMovimento = document.getElementById('tipo_movimento');
     if (tipoMovimento) {
         tipoMovimento.addEventListener('change', toggleCampos);
+    }
+    
+    // Adicionar máscara para telefone
+    const telefoneInput = document.getElementById('telefoneLoja');
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
     }
 });
 let currentPage = 1;
@@ -213,16 +236,29 @@ function atualizarListaProdutos(produtos) {
 function setupFormHandlers() {
     const registroForm = document.getElementById('registroForm');
     const addProdutoForm = document.getElementById('addProdutoForm');
+    const addLojaForm = document.getElementById('addLojaForm');
 
-    registroForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await registrarMovimentacao(new FormData(registroForm));
-    });
+    // Verificar se os elementos existem antes de adicionar listeners
+    if (registroForm) {
+        registroForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await registrarMovimentacao(new FormData(registroForm));
+        });
+    }
 
-    addProdutoForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await adicionarProduto(new FormData(addProdutoForm));
-    });
+    if (addProdutoForm) {
+        addProdutoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await adicionarProduto(new FormData(addProdutoForm));
+        });
+    }
+
+    if (addLojaForm) {
+        addLojaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await adicionarLoja(new FormData(addLojaForm));
+        });
+    }
 }
 
 async function registrarMovimentacao(formData) {
@@ -455,14 +491,22 @@ function showLoading() {
 
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        if (modalId === 'registroModal') {
-            carregarUltimasMovimentacoes();
+    if (!modal) {
+        console.error(`Modal com ID '${modalId}' não encontrado`);
+        return;
+    }
+    
+    modal.style.display = 'block';
+    
+    // Só chamar setupPaginationHandlers se o modal tiver paginação
+    if (modalId === 'registroModal' || modalId === 'removeProdutoModal') {
+        // Aguardar um momento para garantir que o DOM foi atualizado
+        setTimeout(() => {
             setupPaginationHandlers();
-        }
+        }, 100);
     }
 }
+
 
 async function carregarUltimasMovimentacoes(page = 1) {
     try {
@@ -501,12 +545,20 @@ async function carregarUltimasMovimentacoes(page = 1) {
     }
 }
 
-// Adicionar função para renderizar paginação
 function renderizarPaginacao() {
     const paginationContainer = document.querySelector('.pagination');
-    if (!paginationContainer) return;
+    if (!paginationContainer) {
+        console.log('Container de paginação não encontrado');
+        return;
+    }
 
     let buttons = [];
+    
+    // Se não houver páginas, não renderizar
+    if (totalPages === 0) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
     
     // Botão Anterior
     buttons.push(`<button ${currentPage === 1 ? 'disabled' : ''} onclick="carregarUltimasMovimentacoes(${currentPage - 1})">❮</button>`);
@@ -535,17 +587,25 @@ function renderizarPaginacao() {
 }
 
 function setupPaginationHandlers() {
-    document.getElementById('prev-page').addEventListener('click', () => {
-        if (currentPage > 1) {
-            carregarUltimasMovimentacoes(currentPage - 1);
-        }
-    });
+    const prevButton = document.getElementById('prev-page');
+    const nextButton = document.getElementById('next-page');
     
-    document.getElementById('next-page').addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            carregarUltimasMovimentacoes(currentPage + 1);
-        }
-    });
+    // Verificar se os elementos existem antes de adicionar listeners
+    if (prevButton) {
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                carregarUltimasMovimentacoes(currentPage - 1);
+            }
+        });
+    }
+    
+    if (nextButton) {
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                carregarUltimasMovimentacoes(currentPage + 1);
+            }
+        });
+    }
 }
 
 function closeModal(modalId) {
