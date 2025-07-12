@@ -283,7 +283,6 @@ async function loadAllData() {
             updateFuelConsumptionChart(reportData.metrics.fuel_data || []);
             updateLowStockProducts();
             updateCostsChart(reportData.tables);
-            updateApplicationsChart(reportData.tables);
             updateVendasUvasChart();
             updateTables(reportData.tables);
             updateKPIs(reportData.kpis);
@@ -335,7 +334,6 @@ function updateCharts(tables, efficiency) {
     updateCostsChart(tables);
     updateFuelConsumptionChart(tables.fuelData || []);
     updateLowStockProducts();
-    updateApplicationsChart(tables);
     updateEfficiencyChart(efficiency || []);
 }
 
