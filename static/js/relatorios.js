@@ -279,6 +279,11 @@ async function loadAllData() {
         const totalStockData = await totalStockResponse.json();
 
         if (reportData.status === 'success') {
+            console.log('Estrutura completa dos dados recebidos:', reportData);
+            console.log('reportData.tables:', reportData.tables);
+            console.log('Tipo de reportData.tables:', typeof reportData.tables);
+            console.log('É array?', Array.isArray(reportData.tables));
+            
             updateMetrics(reportData.metrics);
             updateFuelConsumptionChart(reportData.metrics.fuel_data || []);
             updateLowStockProducts();
@@ -289,8 +294,10 @@ async function loadAllData() {
         }
 
         if (totalStockData.status === 'success') {
-            document.getElementById('totalStock').textContent = 
-                formatCurrency(totalStockData.valor_total || 0);
+            const estoqueElement = document.getElementById('estoqueTotal');
+            if (estoqueElement) {
+                estoqueElement.textContent = formatCurrency(totalStockData.valor_total || 0);
+            }
         }
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
@@ -298,36 +305,56 @@ async function loadAllData() {
 }
 
 function updateMetrics(metrics) {
-    const totalCosts = (metrics.totalCosts || 0);
+    console.log('Atualizando métricas na tela:', metrics);
     
+    // Garantir que metrics não seja nulo
+    metrics = metrics || {};
     
-    document.getElementById('totalCosts').textContent = formatCurrency(totalCosts);
-
-
+    const totalCosts = metrics.totalCosts || 0;
     const totalFuelConsumption = metrics.fuel_data ? 
         metrics.fuel_data
             .filter(item => item.maquina !== 'POSTO DE COMBUSTÍVEL')
             .reduce((acc, curr) => acc + curr.consumo, 0) : 0;
-
-
-    document.getElementById('fuelConsumption').textContent = 
-        `${totalFuelConsumption.toLocaleString('pt-BR')} L`;
-
-    // Área total fixa em 10 hectares
+    const totalApplications = metrics.totalApplications || 0;
+    const activeEmployees = metrics.activeEmployees || 0;
+    
+    console.log('Valores a serem exibidos:', {
+        totalCosts, totalFuelConsumption, totalApplications, activeEmployees
+    });
+    
+    // Usar os IDs corretos conforme o HTML
+    const costElement = document.getElementById('totalCosts');
+    if (costElement) {
+        costElement.textContent = formatCurrency(totalCosts);
+    } else {
+        console.warn('Elemento #totalCosts não encontrado na página');
+    }
+    
+    const fuelElement = document.getElementById('fuelConsumption');
+    if (fuelElement) {
+        fuelElement.textContent = `${totalFuelConsumption.toLocaleString('pt-BR')} L`;
+    } else {
+        console.warn('Elemento #fuelConsumption não encontrado na página');
+    }
+    
+    const empElement = document.getElementById('activeEmployees');
+    if (empElement) {
+        empElement.textContent = activeEmployees.toLocaleString('pt-BR');
+    } else {
+        console.warn('Elemento #activeEmployees não encontrado na página');
+    }
+    
+    // Área total fixa em 10 hectares para cálculo médio
     const AREA_TOTAL = 10;
     const avgFuelPerHectare = totalFuelConsumption / AREA_TOTAL;
 
-    document.getElementById('avgFuelConsumption').textContent = 
-        `${avgFuelPerHectare.toLocaleString('pt-BR', {
+    const avgFuelElement = document.getElementById('avgFuelConsumption');
+    if (avgFuelElement) {
+        avgFuelElement.textContent = `${avgFuelPerHectare.toLocaleString('pt-BR', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         })} L/ha`;
-
-    document.getElementById('totalApplications').textContent = 
-        (metrics.totalApplications || 0).toLocaleString('pt-BR');
-
-    document.getElementById('activeEmployees').textContent = 
-        (metrics.activeEmployees || 0).toLocaleString('pt-BR');
+    }
 }
 
 function updateCharts(tables, efficiency) {
@@ -338,23 +365,112 @@ function updateCharts(tables, efficiency) {
 }
 
 function updateCostsChart(tables) {
-    const ctx = document.getElementById('costsPerValve').getContext('2d');
+    console.log('updateCostsChart recebeu:', tables);
+    console.log('Tipo:', typeof tables);
+    console.log('É array?', Array.isArray(tables));
+    
+    const ctx = document.getElementById('costsPerValve');
+    if (!ctx) {
+        console.warn('Elemento canvas #costsPerValve não encontrado');
+        return;
+    }
+    
+    const ctxContext = ctx.getContext('2d');
     
     if (window.costsChart) {
         window.costsChart.destroy();
     }
 
-    // Filtrar dados válidos e ordenar por custo total
-    const validData = tables.filter(item => item.totalCost > 0)
-        .sort((a, b) => b.totalCost - a.totalCost);
+    // Verificar diferentes estruturas possíveis dos dados
+    let dataArray = [];
     
-    window.costsChart = new Chart(ctx, {
+    if (Array.isArray(tables)) {
+        dataArray = tables;
+    } else if (tables && typeof tables === 'object') {
+        // Se tables é um objeto, tentar encontrar o array dentro dele
+        if (Array.isArray(tables.costs)) {
+            dataArray = tables.costs;
+        } else if (Array.isArray(tables.costsData)) {
+            dataArray = tables.costsData;
+        } else if (Array.isArray(tables.data)) {
+            dataArray = tables.data;
+        } else {
+            // Se não encontrou nenhum array, tentar converter as propriedades do objeto
+            const keys = Object.keys(tables);
+            console.log('Chaves disponíveis em tables:', keys);
+            
+            // Tentar encontrar alguma propriedade que seja array
+            for (let key of keys) {
+                if (Array.isArray(tables[key])) {
+                    console.log(`Usando array encontrado em tables.${key}:`, tables[key]);
+                    dataArray = tables[key];
+                    break;
+                }
+            }
+        }
+    }
+    
+    console.log('Array final para o gráfico:', dataArray);
+    
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+        console.warn('Nenhum dado válido encontrado para o gráfico de custos');
+        // Criar gráfico vazio
+        window.costsChart = new Chart(ctxContext, {
+            type: 'bar',
+            data: {
+                labels: ['Sem dados'],
+                datasets: [{
+                    label: 'Custo Total (R$)',
+                    data: [0],
+                    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+                    borderColor: 'rgba(200, 200, 200, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    // Filtrar dados válidos e ordenar por custo total
+    const validData = dataArray.filter(item => 
+        item && 
+        typeof item === 'object' && 
+        (item.totalCost > 0 || item.total_cost > 0 || item.custo_total > 0)
+    ).sort((a, b) => {
+        const costA = a.totalCost || a.total_cost || a.custo_total || 0;
+        const costB = b.totalCost || b.total_cost || b.custo_total || 0;
+        return costB - costA;
+    });
+    
+    if (validData.length === 0) {
+        console.warn('Nenhum dado válido após filtragem');
+        return;
+    }
+    
+    window.costsChart = new Chart(ctxContext, {
         type: 'bar',
         data: {
-            labels: validData.map(item => item.valve),
+            labels: validData.map(item => 
+                item.valve || item.valvula || item.nome || 'N/A'
+            ),
             datasets: [{
                 label: 'Custo Total (R$)',
-                data: validData.map(item => item.totalCost),
+                data: validData.map(item => 
+                    item.totalCost || item.total_cost || item.custo_total || 0
+                ),
                 backgroundColor: 'rgba(59, 130, 246, 0.5)',
                 borderColor: 'rgba(59, 130, 246, 1)',
                 borderWidth: 1
@@ -524,10 +640,18 @@ function formatCurrency(value) {
 }
 
 function updateVendasUvasChart() {
-    const ctx = document.getElementById('vendasUvasChart').getContext('2d');
+    const ctx = document.getElementById('vendasUvasChart');
+    if (!ctx) {
+        console.warn('Elemento canvas #vendasUvasChart não encontrado');
+        return;
+    }
     
-    if (window.vendasUvasChart instanceof Chart) {
+    const ctxContext = ctx.getContext('2d');
+    
+    // Destruir gráfico existente se houver
+    if (window.vendasUvasChart && typeof window.vendasUvasChart.destroy === 'function') {
         window.vendasUvasChart.destroy();
+        window.vendasUvasChart = null;
     }
 
     const anoSelecionado = document.getElementById('anoVendas').value;
@@ -558,43 +682,35 @@ function updateVendasUvasChart() {
                     vendasPorMes[index + 1] || 0
                 );
 
-                window.vendasUvasChart = new Chart(ctx, {
+                window.vendasUvasChart = new Chart(ctxContext, {
                     type: 'bar',
                     data: {
                         labels: meses,
                         datasets: [{
-                            label: `Volume de Vendas ${anoSelecionado}`,
+                            label: 'Vendas (kg)',
                             data: dadosCompletos,
-                            backgroundColor: 'rgba(12, 110, 175, 0.5)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
                             borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `Vendas Mensais de Uvas (kg) - ${anoSelecionado}`
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.parsed.y.toLocaleString('pt-BR')} kg`;
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString('pt-BR') + ' kg';
                                     }
                                 }
                             }
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Quilos'
-                                },
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString('pt-BR') + ' kg';
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.raw.toLocaleString('pt-BR') + ' kg';
                                     }
                                 }
                             }
