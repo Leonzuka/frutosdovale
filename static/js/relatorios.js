@@ -1,691 +1,619 @@
-// ===== VARIÁVEIS GLOBAIS =====
-let chartsInstances = {};
-let currentPeriod = 30; // Período padrão: 30 dias
-let isLoading = false;
-
-// ===== LIMPEZA DE GRÁFICOS =====
-function destroyAllCharts() {
-    console.log('Destruindo todos os gráficos existentes...');
-    
-    // Destruir gráficos armazenados em chartsInstances
-    Object.keys(chartsInstances).forEach(key => {
-        if (chartsInstances[key] && typeof chartsInstances[key].destroy === 'function') {
-            chartsInstances[key].destroy();
-            delete chartsInstances[key];
-        }
-    });
-    
-    // Limpar qualquer canvas restante
-    const canvases = document.querySelectorAll('canvas');
-    canvases.forEach(canvas => {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-    });
-    
-    console.log('Gráficos destruídos com sucesso');
-}
-
-// ===== INICIALIZAÇÃO DA PÁGINA =====
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando página de relatórios...');
-    
-    // Inicializar componentes básicos
+// relatorios.js
+document.addEventListener('DOMContentLoaded', () => {
     initializePage();
-    
-    // Carregar dados iniciais
-    loadInitialData();
-    
-    // Configurar event listeners
     setupEventListeners();
+    loadInitialData();
 });
 
-// ===== INICIALIZAÇÃO BÁSICA =====
 function initializePage() {
-    // Atualizar data no header
-    updateHeaderDate();
+    const dateDisplay = document.getElementById('current-date');
+    const yearDisplay = document.getElementById('current-year');
     
-    // Configurar filtros
-    setupFilters();
+    const currentDate = new Date();
+    dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+    yearDisplay.textContent = currentDate.getFullYear();
+
+    // Inicializar data final como hoje
+    document.getElementById('endDate').valueAsDate = new Date();
     
-    // Mostrar loading inicial
-    showLoadingState();
+    // Inicializar data inicial como 30 dias atrás
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    document.getElementById('startDate').valueAsDate = startDate;
 }
 
-function updateHeaderDate() {
-    const dateElement = document.getElementById('current-date');
-    if (dateElement) {
-        const currentDate = new Date();
-        dateElement.textContent = currentDate.toLocaleDateString('pt-BR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
+function loadInitialData() {
+    const dateRange = document.getElementById('dateRange').value;
+    updateDateRange(dateRange);
+    loadAllData();
+}
+
+function updateDateRange(range) {
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch(range) {
+        case '30':
+            startDate.setDate(endDate.getDate() - 30);
+            break;
+        case '90':
+            startDate.setDate(endDate.getDate() - 90);
+            break;
+        case '365':
+            startDate.setDate(endDate.getDate() - 365);
+            break;
     }
+    
+    document.getElementById('startDate').valueAsDate = startDate;
+    document.getElementById('endDate').valueAsDate = endDate;
 }
 
-function setupFilters() {
-    // Configurar anos no filtro de vendas
-    const anoVendas = document.getElementById('anoVendas');
-    if (anoVendas) {
-        const currentYear = new Date().getFullYear();
-        anoVendas.innerHTML = '';
-        
-        for (let year = currentYear; year >= currentYear - 5; year--) {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            if (year === currentYear) option.selected = true;
-            anoVendas.appendChild(option);
-        }
-    }
-}
-
-// ===== EVENT LISTENERS =====
 function setupEventListeners() {
-    // Filtro de período
-    const periodoSelect = document.getElementById('periodoRelatorio');
-    if (periodoSelect) {
-        periodoSelect.addEventListener('change', function() {
-            currentPeriod = parseInt(this.value);
-            refreshAllData();
-        });
-    }
-    
-    // Filtro de tipo
-    const tipoSelect = document.getElementById('tipoRelatorio');
-    if (tipoSelect) {
-        tipoSelect.addEventListener('change', function() {
-            filterDataByType(this.value);
-        });
-    }
-    
-    // Card de download
-    setupDownloadHandlers();
-    
-    // Refresh automático a cada 5 minutos
-    setInterval(refreshMetrics, 5 * 60 * 1000);
-}
-
-// ===== CARREGAMENTO DE DADOS =====
-async function loadInitialData() {
-    try {
-        showLoadingState();
-        
-        // Carregar dados em paralelo
-        await Promise.all([
-            loadMetrics(),
-            loadChartData(),
-            loadRecentActivities(),
-            loadStatusData()
-        ]);
-        
-        hideLoadingState();
-        console.log('Dados carregados com sucesso!');
-        
-    } catch (error) {
-        console.error('Erro ao carregar dados iniciais:', error);
-        showErrorState();
-    }
-}
-
-async function refreshAllData() {
-    if (isLoading) return;
-    
-    try {
-        isLoading = true;
-        showLoadingState();
-        
-        // IMPORTANTE: Destruir gráficos antes de recriar
-        destroyAllCharts();
-        
-        await Promise.all([
-            loadMetrics(),
-            loadChartData(), // ← MUDANÇA: usar loadChartData em vez de updateCharts
-            loadRecentActivities()
-        ]);
-        
-        hideLoadingState();
-        
-    } catch (error) {
-        console.error('Erro ao atualizar dados:', error);
-    } finally {
-        isLoading = false;
-    }
-}
-
-async function refreshMetrics() {
-    try {
-        await loadMetrics();
-        console.log('Métricas atualizadas automaticamente');
-    } catch (error) {
-        console.error('Erro na atualização automática:', error);
-    }
-}
-
-// ===== MÉTRICAS PRINCIPAIS =====
-async function loadMetrics() {
-    try {
-        // Calcular datas
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - currentPeriod);
-        
-        const params = new URLSearchParams({
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
-        });
-        
-        // Buscar dados do relatório
-        const response = await fetch(`/get_report_data?${params}`);
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            updateMetricsDisplay(data);
+    document.getElementById('dateRange').addEventListener('change', (e) => {
+        const customDateRange = document.getElementById('customDateRange');
+        if (e.target.value === 'custom') {
+            customDateRange.style.display = 'flex';
         } else {
-            console.error('Erro nos dados do relatório:', data.message);
-            setDefaultMetrics();
+            customDateRange.style.display = 'none';
+            updateDateRange(e.target.value);
         }
-        
-        // Buscar dados específicos adicionais
-        await Promise.all([
-            loadFuelConsumption(),
-            loadActiveEmployees(),
-            loadTotalStock()
-        ]);
-        
-    } catch (error) {
-        console.error('Erro ao carregar métricas:', error);
-        setDefaultMetrics();
-    }
+    });
+
+    document.getElementById('applyFilters').addEventListener('click', () => {
+        loadAllData();
+    });
+    document.getElementById('anoVendas').addEventListener('change', updateVendasUvasChart);
 }
 
-function updateMetricsDisplay(data) {
-    // Custos de mão de obra
-    const totalCosts = document.getElementById('totalCosts');
-    if (totalCosts) {
-        const costs = data.metrics ? data.metrics.total_costs || 0 : 0;
-        totalCosts.textContent = formatCurrency(costs);
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar o botão de podas
+    const showPodasBtn = document.getElementById('showPodasBtn');
+    if (showPodasBtn) {
+        showPodasBtn.addEventListener('click', function() {
+            document.getElementById('podasModal').style.display = 'flex';
+            loadPodasData();
+        });
     }
-}
-
-async function loadFuelConsumption() {
-    try {
-        // Buscar dados de abastecimento
-        const response = await fetch('/view_abastecimento');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - currentPeriod);
-            
-            // Filtrar dados pelo período
-            const filteredLogs = data.logs.filter(log => {
-                const logDate = new Date(log.data);
-                return logDate >= startDate && logDate <= endDate && 
-                       log.tipo_trator !== 'POSTO DE COMBUSTÍVEL';
+    
+    // Função para fechar o modal de podas
+    window.closePodasModal = function() {
+        document.getElementById('podasModal').style.display = 'none';
+    };
+    
+    // Adicionar a função de carregar dados de podas
+    window.loadPodasData = function() {
+        fetch('/get_valvulas_poda')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderPodasTable(data.valvulas);
+                } else {
+                    console.error('Erro ao carregar dados de poda:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
             });
+    };
+    
+    // Função para renderizar a tabela de podas
+    function renderPodasTable(valvulas) {
+        const tbody = document.getElementById('podasTableBody');
+        tbody.innerHTML = '';
+        
+        const today = new Date();
+        
+        valvulas.forEach(valvula => {
+            const tr = document.createElement('tr');
             
-            // Calcular total de consumo
-            const totalConsumption = filteredLogs.reduce((sum, log) => {
-                return sum + Math.abs(parseFloat(log.quantidade) || 0);
-            }, 0);
+            // Calcular DAP (Dias Após Poda)
+            let dapText = 'Não podada';
+            let dapValue = '';
             
-            const fuelElement = document.getElementById('fuelConsumption');
-            if (fuelElement) {
-                fuelElement.textContent = `${totalConsumption.toFixed(1)} L`;
+            if (valvula.data_poda) {
+                // Correção para o problema de timezone
+                // Extrair ano, mês e dia diretamente da string da data
+                let dataISO = valvula.data_poda;
+                if (dataISO.includes('T')) {
+                    dataISO = dataISO.split('T')[0];
+                }
+                
+                // Criar a data usando o constructor de data com ano, mês (0-11) e dia
+                const [ano, mes, dia] = dataISO.split('-').map(Number);
+                const podaDate = new Date(ano, mes - 1, dia);  // Ajuste no mês (JS usa 0-11)
+                
+                const diffTime = Math.abs(today - podaDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                dapText = diffDays.toString();
+                dapValue = diffDays;
+                
+                // Formatação da data para DD/MM/YYYY sem problemas de timezone
+                const diaFormatado = dia.toString().padStart(2, '0');
+                const mesFormatado = (mes).toString().padStart(2, '0');
+                var dataFormatada = `${diaFormatado}/${mesFormatado}/${ano}`;
+            } else {
+                var dataFormatada = 'Não definida';
             }
-        }
-    } catch (error) {
-        console.error('Erro ao carregar consumo de combustível:', error);
-        const fuelElement = document.getElementById('fuelConsumption');
-        if (fuelElement) {
-            fuelElement.textContent = '0 L';
-        }
-    }
-}
-
-async function loadActiveEmployees() {
-    try {
-        const response = await fetch('/get_funcionarios');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const activeCount = data.funcionarios ? data.funcionarios.length : 0;
             
-            const employeesElement = document.getElementById('activeEmployees');
-            if (employeesElement) {
-                employeesElement.textContent = activeCount.toString();
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao carregar funcionários ativos:', error);
-        const employeesElement = document.getElementById('activeEmployees');
-        if (employeesElement) {
-            employeesElement.textContent = '0';
-        }
-    }
-}
-
-async function loadTotalStock() {
-    try {
-        const response = await fetch('/get_total_stock');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            const stockElement = document.getElementById('estoqueTotal');
-            if (stockElement) {
-                stockElement.textContent = formatCurrency(data.valor_total || 0);
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao carregar valor do estoque:', error);
-        const stockElement = document.getElementById('estoqueTotal');
-        if (stockElement) {
-            stockElement.textContent = 'R$ 0,00';
-        }
-    }
-}
-
-function setDefaultMetrics() {
-    // Definir valores padrão em caso de erro
-    const totalCosts = document.getElementById('totalCosts');
-    const fuelConsumption = document.getElementById('fuelConsumption');
-    const activeEmployees = document.getElementById('activeEmployees');
-    const estoqueTotal = document.getElementById('estoqueTotal');
-    
-    if (totalCosts) totalCosts.textContent = 'R$ 0,00';
-    if (fuelConsumption) fuelConsumption.textContent = '0 L';
-    if (activeEmployees) activeEmployees.textContent = '0';
-    if (estoqueTotal) estoqueTotal.textContent = 'R$ 0,00';
-    
-    // Zerar contadores de aplicações (não existem mais)
-    const totalApplications = document.getElementById('totalApplications');
-    if (totalApplications) totalApplications.textContent = '0';
-}
-
-// ===== GRÁFICOS =====
-async function loadChartData() {
-    try {
-        await Promise.all([
-            createCostsChart(),
-            createFuelChart(),
-            createEmployeesChart(),
-            createTractorsChart()
-        ]);
-    } catch (error) {
-        console.error('Erro ao carregar gráficos:', error);
-    }
-}
-
-async function createCostsChart() {
-    const ctx = document.getElementById('costsChart');
-    if (!ctx) {
-        console.log('Canvas costsChart não encontrado');
-        return;
-    }
-    
-    // SEGURANÇA: Verificar se já existe um gráfico neste canvas
-    if (chartsInstances.costsChart) {
-        chartsInstances.costsChart.destroy();
-        delete chartsInstances.costsChart;
-    }
-    
-    try {
-        // Buscar dados de apontamentos dos últimos dias
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - currentPeriod);
-        
-        // Simular dados de evolução de custos (seria necessário endpoint específico)
-        const labels = [];
-        const data = [];
-        
-        for (let i = currentPeriod; i >= 0; i -= Math.max(1, Math.floor(currentPeriod / 7))) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            labels.push(date.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }));
+            tr.innerHTML = `
+                <td>${valvula.valvula}</td>
+                <td>${valvula.variedade || '-'}</td>
+                <td>${dataFormatada}</td>
+                <td class="dap-value">${dapText}</td>
+                <td>${valvula.area_hectare ? valvula.area_hectare.toFixed(2) : '-'}</td>
+                <td>
+                    <button class="edit-poda-btn" onclick="showEditPodaModal(${valvula.id}, '${valvula.valvula}')">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </td>
+            `;
             
-            // Dados simulados baseados em padrão realista
-            data.push(Math.random() * 500 + 200);
-        }
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Função para mostrar o modal de edição de poda
+    window.showEditPodaModal = function(id, valvulaName) {
+        const modal = document.getElementById('editPodaModal');
+        document.getElementById('editPodaId').value = id;
+        document.getElementById('editPodaValvulaLabel').textContent = `Válvula: ${valvulaName}`;
         
-        // Destruir gráfico existente se houver
-        if (chartsInstances.costsChart) {
-            chartsInstances.costsChart.destroy();
-        }
-        
-        chartsInstances.costsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Custos Diários (R$)',
-                    data: data,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
+        // Buscar a data atual da poda para esta válvula
+        fetch(`/get_valvula/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.valvula.data_poda) {
+                    // Extrair apenas a parte da data (YYYY-MM-DD)
+                    const dataPoda = data.valvula.data_poda;
+                    let dataCorrigida;
+                    
+                    // Verificar diferentes formatos possíveis e extrair apenas a data YYYY-MM-DD
+                    if (dataPoda.includes('T')) {
+                        dataCorrigida = dataPoda.split('T')[0];
+                    } else if (dataPoda.includes(' ')) {
+                        dataCorrigida = dataPoda.split(' ')[0];
+                    } else {
+                        dataCorrigida = dataPoda;
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'R$ ' + value.toFixed(0);
-                            }
+                    
+                    // Definir o valor no campo de data
+                    document.getElementById('editPodaDate').value = dataCorrigida;
+                    console.log("Data formatada para o formulário:", dataCorrigida);
+                } else {
+                    // Se não tem data, limpar o campo
+                    document.getElementById('editPodaDate').value = '';
+                }
+                modal.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados da válvula:', error);
+                modal.style.display = 'flex';
+            });
+    };
+    
+    // Função para fechar o modal de edição de poda
+    window.closeEditPodaModal = function() {
+        document.getElementById('editPodaModal').style.display = 'none';
+    };
+    
+    // Função para salvar a data de poda
+    window.savePodaDate = function() {
+        const id = document.getElementById('editPodaId').value;
+        const date = document.getElementById('editPodaDate').value;
+        
+        if (!date) {
+            alert('Por favor, selecione uma data válida.');
+            return;
+        }
+        
+        // Garantir que a data esteja no formato YYYY-MM-DD
+        let dataFormatada = date;
+        if (date.includes('/')) {
+            const partes = date.split('/');
+            dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
+        }
+        
+        fetch(`/update_poda_date/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data_poda: dataFormatada })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeEditPodaModal();
+                loadPodasData();
+            } else {
+                alert('Erro ao atualizar data de poda: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar data de poda');
+        });
+    };
+    
+    // Configurar o campo de busca para a tabela de podas
+    const podasSearch = document.getElementById('podasSearch');
+    if (podasSearch) {
+        podasSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#podasTableBody tr');
+            
+            rows.forEach(row => {
+                const valvula = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const variedade = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                
+                if (valvula.includes(searchTerm) || variedade.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Configurar o botão de exportação de podas
+    const exportPodasBtn = document.getElementById('exportPodasBtn');
+    if (exportPodasBtn) {
+        exportPodasBtn.addEventListener('click', function() {
+            window.location.href = '/download_podas_excel';
+        });
+    }
+});
+
+async function loadAllData() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    try {
+        const [reportResponse, totalStockResponse] = await Promise.all([
+            fetch(`/get_report_data?startDate=${startDate}&endDate=${endDate}`),
+            fetch('/get_total_stock'),
+
+        ]);
+
+        const reportData = await reportResponse.json();
+        const totalStockData = await totalStockResponse.json();
+
+        if (reportData.status === 'success') {
+            updateMetrics(reportData.metrics);
+            updateFuelConsumptionChart(reportData.metrics.fuel_data || []);
+            updateLowStockProducts();
+            updateCostsChart(reportData.tables);
+            updateApplicationsChart(reportData.tables);
+            updateVendasUvasChart();
+            updateTables(reportData.tables);
+            updateKPIs(reportData.kpis);
+        }
+
+        if (totalStockData.status === 'success') {
+            document.getElementById('totalStock').textContent = 
+                formatCurrency(totalStockData.valor_total || 0);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+    }
+}
+
+function updateMetrics(metrics) {
+    const totalCosts = (metrics.totalCosts || 0);
+    
+    
+    document.getElementById('totalCosts').textContent = formatCurrency(totalCosts);
+
+
+    const totalFuelConsumption = metrics.fuel_data ? 
+        metrics.fuel_data
+            .filter(item => item.maquina !== 'POSTO DE COMBUSTÍVEL')
+            .reduce((acc, curr) => acc + curr.consumo, 0) : 0;
+
+
+    document.getElementById('fuelConsumption').textContent = 
+        `${totalFuelConsumption.toLocaleString('pt-BR')} L`;
+
+    // Área total fixa em 10 hectares
+    const AREA_TOTAL = 10;
+    const avgFuelPerHectare = totalFuelConsumption / AREA_TOTAL;
+
+    document.getElementById('avgFuelConsumption').textContent = 
+        `${avgFuelPerHectare.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })} L/ha`;
+
+    document.getElementById('totalApplications').textContent = 
+        (metrics.totalApplications || 0).toLocaleString('pt-BR');
+
+    document.getElementById('activeEmployees').textContent = 
+        (metrics.activeEmployees || 0).toLocaleString('pt-BR');
+}
+
+function updateCharts(tables, efficiency) {
+    updateCostsChart(tables);
+    updateFuelConsumptionChart(tables.fuelData || []);
+    updateLowStockProducts();
+    updateApplicationsChart(tables);
+    updateEfficiencyChart(efficiency || []);
+}
+
+function updateCostsChart(tables) {
+    const ctx = document.getElementById('costsPerValve').getContext('2d');
+    
+    if (window.costsChart) {
+        window.costsChart.destroy();
+    }
+
+    // Filtrar dados válidos e ordenar por custo total
+    const validData = tables.filter(item => item.totalCost > 0)
+        .sort((a, b) => b.totalCost - a.totalCost);
+    
+    window.costsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: validData.map(item => item.valve),
+            datasets: [{
+                label: 'Custo Total (R$)',
+                data: validData.map(item => item.totalCost),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'R$ ' + context.raw.toLocaleString('pt-BR');
                         }
                     }
                 }
             }
-        });
-        
-    } catch (error) {
-        console.error('Erro ao criar gráfico de custos:', error);
-    }
+        }
+    });
 }
 
-async function createFuelChart() {
-    const ctx = document.getElementById('fuelChart');
-    if (!ctx) return;
+function updateFuelConsumptionChart(fuelData) {
+    const ctx = document.getElementById('fuelConsumptionChart').getContext('2d');
     
+    if (window.fuelChart) {
+        window.fuelChart.destroy();
+    }
+    
+    // Filtrar dados excluindo o posto
+    const consumoPorMaquina = Array.isArray(fuelData) ? 
+        fuelData.filter(item => item.maquina !== 'POSTO DE COMBUSTÍVEL') : [];
+    
+    window.fuelChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: consumoPorMaquina.map(item => item.maquina),
+            datasets: [{
+                label: 'Consumo de Combustível (L)',
+                data: consumoPorMaquina.map(item => item.consumo),
+                backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Litros'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y.toFixed(2)} L`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function updateLowStockProducts() {
     try {
-        const response = await fetch('/view_abastecimento');
+        const response = await fetch('/get_low_stock_products');
         const data = await response.json();
         
         if (data.status === 'success') {
-            // Agrupar por tipo de trator
-            const fuelByTractor = {};
+            const tbody = document.getElementById('lowStockTableBody');
+            const classificacaoFilter = document.getElementById('classificacaoFilter');
+            const selectedClassificacao = classificacaoFilter.value;
             
-            data.logs.forEach(log => {
-                if (log.tipo_trator !== 'POSTO DE COMBUSTÍVEL') {
-                    if (!fuelByTractor[log.tipo_trator]) {
-                        fuelByTractor[log.tipo_trator] = 0;
-                    }
-                    fuelByTractor[log.tipo_trator] += Math.abs(parseFloat(log.quantidade) || 0);
-                }
-            });
-            
-            const labels = Object.keys(fuelByTractor);
-            const values = Object.values(fuelByTractor);
-            const colors = generateColors(labels.length);
-            
-            // Destruir gráfico existente se houver
-            if (chartsInstances.fuelChart) {
-                chartsInstances.fuelChart.destroy();
+            tbody.innerHTML = ''; // Limpa a tabela atual
+
+            data.produtos
+                .filter(product => selectedClassificacao === 'TODOS' || product.classificacao === selectedClassificacao)
+                .forEach(product => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${product.produto}</td>
+                        <td>${product.saldo_atual.toFixed(2)} ${product.tipo}</td>
+                        <td>${product.tipo}</td>
+                        <td>${product.classificacao}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar produtos com baixo estoque:', error);
+    }
+}
+
+// Adicione este evento após a função
+document.addEventListener('DOMContentLoaded', function() {
+    const classificacaoFilter = document.getElementById('classificacaoFilter');
+    if (classificacaoFilter) {
+        classificacaoFilter.addEventListener('change', updateLowStockProducts);
+    }
+});
+
+function updateTables(data) {
+    const tbody = document.getElementById('costsTableBody');
+    tbody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="5" style="text-align: center;">Nenhum dado disponível</td>';
+        tbody.appendChild(tr);
+        return;
+    }
+
+    data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.valve}</td>
+            <td>${formatCurrency(row.laborCost)}</td>
+            <td>${formatCurrency(row.inputsCost)}</td>
+            <td>${formatCurrency(row.totalCost)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateKPIs(kpis) {
+    // Custo médio por hectare
+    document.getElementById('avgCostPerHectare').textContent = 
+        `${formatCurrency(kpis.avgCostPerHectare || 0)} /ha`;
+
+    // Consumo médio de combustível por hectare (melhorado)
+    const fuelElement = document.getElementById('avgFuelConsumption');
+    const avgFuelConsumption = kpis.avgFuelConsumption || 0;
+    const totalFuelConsumption = kpis.totalFuelConsumption || 0;
+    
+    fuelElement.textContent = `${avgFuelConsumption.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })} L/ha`;
+    
+    // Tooltip informativo
+    fuelElement.title = `Consumo total: ${totalFuelConsumption.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })} L em ${kpis.totalArea} hectares`;
+}
+
+// Função auxiliar para formatação de moeda
+function formatCurrency(value) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(value || 0);
+}
+
+function updateVendasUvasChart() {
+    const ctx = document.getElementById('vendasUvasChart').getContext('2d');
+    
+    if (window.vendasUvasChart instanceof Chart) {
+        window.vendasUvasChart.destroy();
+    }
+
+    const anoSelecionado = document.getElementById('anoVendas').value;
+    const dataInicial = `${anoSelecionado}-01-01`;
+    const dataFinal = `${anoSelecionado}-12-31`;
+
+    fetch(`/get_vendas_uvas?data_inicial=${dataInicial}&data_final=${dataFinal}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro na resposta da rede');
             }
-            
-            chartsInstances.fuelChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors,
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                             'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                
+                // Criar objeto com vendas mapeadas por mês
+                const vendasPorMes = {};
+                data.vendas.forEach(venda => {
+                    const [mes] = venda.mes.split('/');
+                    vendasPorMes[parseInt(mes)] = venda.quilo;
+                });
+
+                // Criar array de dados com todos os meses
+                const dadosCompletos = meses.map((_, index) => 
+                    vendasPorMes[index + 1] || 0
+                );
+
+                window.vendasUvasChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: meses,
+                        datasets: [{
+                            label: `Volume de Vendas ${anoSelecionado}`,
+                            data: dadosCompletos,
+                            backgroundColor: 'rgba(12, 110, 175, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Vendas Mensais de Uvas (kg) - ${anoSelecionado}`
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.parsed.y.toLocaleString('pt-BR')} kg`;
+                                    }
+                                }
+                            }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.label + ': ' + context.parsed.toFixed(1) + 'L';
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Quilos'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString('pt-BR') + ' kg';
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao criar gráfico de combustível:', error);
-    }
-}
-
-async function createEmployeesChart() {
-    const ctx = document.getElementById('employeesChart');
-    if (!ctx) return;
-    
-    try {
-        // Dados simulados de atividade dos funcionários ao longo do período
-        const labels = [];
-        const data = [];
-        
-        for (let i = Math.min(currentPeriod, 14); i >= 0; i -= 2) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            labels.push(date.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }));
-            
-            // Simular atividade baseada em padrão realista
-            data.push(Math.floor(Math.random() * 8) + 3); // Entre 3 e 10 funcionários ativos
-        }
-        
-        // Destruir gráfico existente se houver
-        if (chartsInstances.employeesChart) {
-            chartsInstances.employeesChart.destroy();
-        }
-        
-        chartsInstances.employeesChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Funcionários Ativos',
-                    data: data,
-                    backgroundColor: 'rgba(34, 197, 94, 0.6)',
-                    borderColor: '#22c55e',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
+                });
             }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar dados de vendas:', error);
         });
-        
-    } catch (error) {
-        console.error('Erro ao criar gráfico de funcionários:', error);
-    }
 }
 
-async function createTractorsChart() {
-    const ctx = document.getElementById('applicationsChart'); // Reutilizar canvas de aplicações
-    if (!ctx) return;
-    
-    try {
-        const response = await fetch('/view_manutencao');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            // Agrupar manutenções por tipo de trator
-            const maintenanceByTractor = {};
-            
-            data.logs.forEach(log => {
-                if (!maintenanceByTractor[log.tipo_trator]) {
-                    maintenanceByTractor[log.tipo_tractor] = 0;
-                }
-                maintenanceByTractor[log.tipo_tractor]++;
-            });
-            
-            const labels = Object.keys(maintenanceByTractor);
-            const values = Object.values(maintenanceByTractor);
-            
-            // Destruir gráfico existente se houver
-            if (chartsInstances.applicationsChart) {
-                chartsInstances.applicationsChart.destroy();
-            }
-            
-            chartsInstances.applicationsChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Manutenções',
-                        data: values,
-                        backgroundColor: 'rgba(168, 85, 247, 0.6)',
-                        borderColor: '#a855f7',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao criar gráfico de tratores:', error);
-    }
-}
-
-// ===== TABELA DE ATIVIDADES RECENTES =====
-async function loadRecentActivities() {
-    try {
-        // Simular dados de atividades recentes baseados nos apontamentos
-        const tableBody = document.querySelector('#recentActivities tbody');
-        if (!tableBody) return;
-        
-        // Dados simulados (seria necessário endpoint específico)
-        const activities = [
-            {
-                data: new Date().toLocaleDateString('pt-BR'),
-                funcionario: 'João Silva',
-                atividade: 'Amarrio',
-                area: '2.5 ha',
-                custo: 'R$ 65,00',
-                status: 'Concluído'
-            },
-            {
-                data: new Date(Date.now() - 86400000).toLocaleDateString('pt-BR'),
-                funcionario: 'Maria Santos',
-                atividade: 'Poda',
-                area: '1.8 ha',
-                custo: 'R$ 80,00',
-                status: 'Concluído'
-            },
-            // Adicionar mais atividades conforme necessário
-        ];
-        
-        tableBody.innerHTML = '';
-        
-        activities.forEach(activity => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${activity.data}</td>
-                <td>${activity.funcionario}</td>
-                <td>${activity.atividade}</td>
-                <td>${activity.area}</td>
-                <td>${activity.custo}</td>
-                <td><span class="status-badge ${activity.status.toLowerCase()}">${activity.status}</span></td>
-            `;
-            tableBody.appendChild(row);
-        });
-        
-    } catch (error) {
-        console.error('Erro ao carregar atividades recentes:', error);
-    }
-}
-
-// ===== STATUS DE APLICAÇÕES (ZERADO POIS NÃO EXISTEM MAIS) =====
-function loadStatusData() {
-    // Zerar todos os valores de aplicações
-    const statusElements = [
-        'fertirrigacaoHoje', 'fertirrigacaoMes', 'proximaFertirrigacao',
-        'defensivosHoje', 'defensivosMes', 'defensivosEstoque',
-        'foliarHoje', 'foliarMes', 'foliarEficiencia',
-        'hormonalHoje', 'hormonalMes', 'crescimentoHormonal'
-    ];
-    
-    statusElements.forEach(elementId => {
-        const element = document.getElementById(elementId);
-        if (element) {
-            if (elementId.includes('Hoje') || elementId.includes('Mes')) {
-                element.textContent = '0';
-            } else {
-                element.textContent = '--';
-            }
-        }
-    });
-}
-
-// ===== DOWNLOAD E EXPORTAÇÃO =====
-function setupDownloadHandlers() {
-    // Card de download principal
-    const downloadCard = document.getElementById('downloadCard');
-    const downloadOptions = document.querySelector('.download-options');
-    
-    if (downloadCard && downloadOptions) {
-        downloadCard.addEventListener('click', function(e) {
-            e.stopPropagation();
-            downloadOptions.style.display = 
-                downloadOptions.style.display === 'none' || !downloadOptions.style.display ? 'block' : 'none';
-        });
-        
-        // Fechar ao clicar fora
-        document.addEventListener('click', function(event) {
-            if (!downloadCard.contains(event.target)) {
-                downloadOptions.style.display = 'none';
-            }
-        });
-    }
-    
-    // Download de vendas Excel
-    const downloadVendasExcel = document.getElementById('downloadVendasExcel');
-    if (downloadVendasExcel) {
-        downloadVendasExcel.addEventListener('click', handleVendasExcelDownload);
-    }
-}
-
-async function handleVendasExcelDownload() {
+document.getElementById('exportVendasExcel').addEventListener('click', async () => {
     const ano = document.getElementById('anoVendas').value;
     
     try {
-        showDownloadProgress(true);
-        
         const response = await fetch(`/download_vendas_excel?ano=${ano}`);
         const contentType = response.headers.get('content-type');
         
@@ -708,98 +636,114 @@ async function handleVendasExcelDownload() {
         a.click();
         window.URL.revokeObjectURL(url);
         a.remove();
-        
-        showSuccess('Relatório baixado com sucesso!');
-        
     } catch (error) {
         console.error('Erro:', error);
-        showError(`Erro ao gerar relatório Excel: ${error.message}`);
-    } finally {
-        showDownloadProgress(false);
+        alert(`Erro ao gerar relatório Excel: ${error.message}`);
     }
-}
+});
 
-// ===== FILTRAGEM =====
-function filterDataByType(type) {
-    console.log('Filtrar por tipo:', type);
-    
-    if (type === 'todos') {
-        // MUDANÇA: usar loadChartData em vez de refreshAllData para evitar loop
-        destroyAllCharts();
-        loadChartData();
-    } else {
-        // Filtrar dados específicos
-        // Implementar conforme necessário
-    }
-}
-
-// ===== UTILITÁRIOS =====
-function formatCurrency(value) {
-    if (typeof value !== 'number') {
-        value = parseFloat(value) || 0;
-    }
-    
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(value);
-}
-
-function generateColors(count) {
-    const colors = [
-        '#3b82f6', '#ef4444', '#22c55e', '#f59e0b',
-        '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'
-    ];
-    
-    const result = [];
-    for (let i = 0; i < count; i++) {
-        result.push(colors[i % colors.length]);
-    }
-    return result;
-}
-
-function showLoadingState() {
-    const loadingElements = document.querySelectorAll('.metric-card, .chart-container');
-    loadingElements.forEach(el => el.classList.add('loading'));
-}
-
-function hideLoadingState() {
-    const loadingElements = document.querySelectorAll('.metric-card, .chart-container');
-    loadingElements.forEach(el => el.classList.remove('loading'));
-}
-
-function showErrorState() {
-    console.error('Erro no carregamento dos dados');
-    // Implementar visual de erro se necessário
-}
-
-function showDownloadProgress(show) {
-    const button = document.getElementById('downloadVendasExcel');
-    if (button) {
-        if (show) {
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-            button.disabled = true;
-        } else {
-            button.innerHTML = '<i class="fas fa-file-excel"></i> Excel';
-            button.disabled = false;
+async function updateTotalStock() {
+    try {
+        const response = await fetch('/get_total_stock');
+        const data = await response.json();
+        if (data.status === 'success') {
+            document.getElementById('estoqueTotal').textContent = 
+                formatCurrency(data.valor_total || 0);
         }
+    } catch (error) {
+        console.error('Erro ao buscar valor total do estoque:', error);
     }
 }
 
-function showSuccess(message) {
-    // Implementar notificação de sucesso
-    console.log('Sucesso:', message);
+// Manipulador do card de download
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadCard = document.getElementById('downloadCard');
+    const downloadOptions = document.querySelector('.download-options');
+    
+    downloadCard.addEventListener('click', function() {
+        downloadOptions.style.display = 
+            downloadOptions.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Fechar ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!downloadCard.contains(event.target)) {
+            downloadOptions.style.display = 'none';
+        }
+    });
+});
+
+// Função para download dos arquivos
+async function downloadFile(type) {
+    try {
+        const response = await fetch(`/download_${type}`);
+        if (!response.ok) throw new Error('Erro ao baixar arquivo');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Erro ao baixar arquivo:', error);
+        alert('Erro ao baixar arquivo. Tente novamente.');
+    }
 }
 
-function showError(message) {
-    // Implementar notificação de erro
-    console.error('Erro:', message);
-    alert(message);
+function showExtraPaymentModal() {
+    document.getElementById('dateSelectionModal').style.display = 'flex';
 }
 
-// ===== EXPORTAR FUNÇÕES GLOBAIS (se necessário) =====
-window.relatoriosUtils = {
-    formatCurrency,
-    refreshAllData,
-    loadMetrics
-};
+function closeModal() {
+    document.getElementById('dateSelectionModal').style.display = 'none';
+}
+
+function downloadExtraPayment() {
+    const startDate = document.getElementById('extraStartDate').value;
+    const endDate = document.getElementById('extraEndDate').value;
+
+    if (!startDate || !endDate) {
+        alert('Por favor, selecione as datas inicial e final.');
+        return;
+    }
+
+    window.location.href = `/download_apontamento/resumo?dataInicial=${startDate}&dataFinal=${endDate}`;
+    closeModal();
+}
+
+// Verificar se o elemento existe antes de adicionar o evento
+const csvFileInput = document.getElementById('csvFile');
+if (csvFileInput) {
+    csvFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/importar_vendas', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Dados importados com sucesso!');
+                updateVendasUvasChart(); // Atualiza o gráfico
+            } else {
+                alert('Erro ao importar dados: ' + data.error);
+            }
+        } catch (error) {
+            alert('Erro ao importar arquivo: ' + error);
+        }
+
+        // Limpar o input para permitir selecionar o mesmo arquivo novamente
+        e.target.value = '';
+    });
+}
