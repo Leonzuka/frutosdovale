@@ -272,7 +272,6 @@ async function loadAllData() {
         const [reportResponse, totalStockResponse] = await Promise.all([
             fetch(`/get_report_data?startDate=${startDate}&endDate=${endDate}`),
             fetch('/get_total_stock'),
-
         ]);
 
         const reportData = await reportResponse.json();
@@ -284,13 +283,33 @@ async function loadAllData() {
             console.log('Tipo de reportData.tables:', typeof reportData.tables);
             console.log('É array?', Array.isArray(reportData.tables));
             
-            updateMetrics(reportData.metrics);
-            updateFuelConsumptionChart(reportData.metrics.fuel_data || []);
-            updateLowStockProducts();
-            updateCostsChart(reportData.tables);
-            updateVendasUvasChart();
-            updateTables(reportData.tables);
-            updateKPIs(reportData.kpis);
+            // Verificar se as funções de atualização existem antes de chamar
+            if (typeof updateMetrics === 'function') {
+                updateMetrics(reportData.metrics || {});
+            }
+            
+            if (typeof updateFuelConsumptionChart === 'function') {
+                updateFuelConsumptionChart(reportData.metrics?.fuel_data || []);
+            }
+            
+            if (typeof updateLowStockProducts === 'function') {
+                updateLowStockProducts();
+            }
+            
+            if (typeof updateCostsChart === 'function') {
+                updateCostsChart(reportData.tables || []);
+            }
+            
+            if (typeof updateVendasUvasChart === 'function') {
+                updateVendasUvasChart();
+            }
+            
+            if (typeof updateTables === 'function') {
+                updateTables(reportData.tables || []);
+            }
+          
+        } else {
+            console.error('Erro na resposta do servidor:', reportData.message);
         }
 
         if (totalStockData.status === 'success') {
@@ -301,6 +320,10 @@ async function loadAllData() {
         }
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        // Mostrar erro na interface se possível
+        if (typeof showMessage === 'function') {
+            showMessage('Erro ao carregar dados do relatório', true);
+        }
     }
 }
 
@@ -387,13 +410,13 @@ function updateCostsChart(tables) {
     if (Array.isArray(tables)) {
         dataArray = tables;
     } else if (tables && typeof tables === 'object') {
-        // Se tables é um objeto, tentar encontrar o array dentro dele
-        if (Array.isArray(tables.costs)) {
+        // Verificar diferentes possíveis estruturas
+        if (Array.isArray(tables.valve_costs)) {
+            dataArray = tables.valve_costs;
+        } else if (Array.isArray(tables.costs)) {
             dataArray = tables.costs;
         } else if (Array.isArray(tables.costsData)) {
             dataArray = tables.costsData;
-        } else if (Array.isArray(tables.data)) {
-            dataArray = tables.data;
         } else {
             // Se não encontrou nenhum array, tentar converter as propriedades do objeto
             const keys = Object.keys(tables);
@@ -457,9 +480,36 @@ function updateCostsChart(tables) {
     
     if (validData.length === 0) {
         console.warn('Nenhum dado válido após filtragem');
+        // Criar gráfico vazio mesmo assim
+        window.costsChart = new Chart(ctxContext, {
+            type: 'bar',
+            data: {
+                labels: ['Sem dados válidos'],
+                datasets: [{
+                    label: 'Custo Total (R$)',
+                    data: [0],
+                    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+                    borderColor: 'rgba(200, 200, 200, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
         return;
     }
-    
+
     window.costsChart = new Chart(ctxContext, {
         type: 'bar',
         data: {
@@ -588,47 +638,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateTables(data) {
     const tbody = document.getElementById('costsTableBody');
+    if (!tbody) {
+        console.warn('Elemento costsTableBody não encontrado');
+        return;
+    }
+    
     tbody.innerHTML = '';
 
-    if (!data || data.length === 0) {
+    // Tratar diferentes estruturas de dados
+    let tableData = [];
+    
+    if (Array.isArray(data)) {
+        tableData = data;
+    } else if (data && typeof data === 'object') {
+        // Verificar se tem valve_costs
+        if (Array.isArray(data.valve_costs)) {
+            tableData = data.valve_costs;
+        } else if (Array.isArray(data.costs)) {
+            tableData = data.costs;
+        } else if (Array.isArray(data.costsData)) {
+            tableData = data.costsData;
+        } else {
+            console.log('Estrutura de dados não reconhecida em updateTables:', data);
+        }
+    }
+
+    if (!tableData || tableData.length === 0) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td colspan="5" style="text-align: center;">Nenhum dado disponível</td>';
         tbody.appendChild(tr);
         return;
     }
 
-    data.forEach(row => {
+    tableData.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${row.valve}</td>
-            <td>${formatCurrency(row.laborCost)}</td>
-            <td>${formatCurrency(row.inputsCost)}</td>
-            <td>${formatCurrency(row.totalCost)}</td>
+            <td>${row.valve || row.valvula || 'N/A'}</td>
+            <td>${formatCurrency(row.laborCost || row.labor_cost || 0)}</td>
+            <td>${formatCurrency(row.inputsCost || row.inputs_cost || 0)}</td>
+            <td>${formatCurrency(row.totalCost || row.total_cost || 0)}</td>
         `;
         tbody.appendChild(tr);
     });
-}
-
-function updateKPIs(kpis) {
-    // Custo médio por hectare
-    document.getElementById('avgCostPerHectare').textContent = 
-        `${formatCurrency(kpis.avgCostPerHectare || 0)} /ha`;
-
-    // Consumo médio de combustível por hectare (melhorado)
-    const fuelElement = document.getElementById('avgFuelConsumption');
-    const avgFuelConsumption = kpis.avgFuelConsumption || 0;
-    const totalFuelConsumption = kpis.totalFuelConsumption || 0;
-    
-    fuelElement.textContent = `${avgFuelConsumption.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })} L/ha`;
-    
-    // Tooltip informativo
-    fuelElement.title = `Consumo total: ${totalFuelConsumption.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })} L em ${kpis.totalArea} hectares`;
 }
 
 // Função auxiliar para formatação de moeda

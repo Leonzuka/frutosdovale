@@ -132,46 +132,6 @@ td {
     color: var(--text-secondary);
 }
 
-/* Seção de KPIs */
-.kpi-section {
-    background: var(--primary-color);
-    padding: 1rem; /* Reduzido de 1.5rem para 1rem */
-    border-radius: 0.75rem;
-    border: 1px solid var(--border-color);
-}
-
-.kpi-section h3 {
-    margin-bottom: 0.5rem; /* Reduzido de 1rem para 0.5rem */
-    font-size: 1.1rem;
-}
-
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem; /* Reduzido de 1rem para 0.5rem */
-}
-
-.kpi-card {
-    background: rgba(30, 41, 59, 0.7);
-    padding: 1rem; /* Reduzido de 1.5rem para 1rem */
-    border-radius: 0.5rem;
-    text-align: center;
-}
-
-.kpi-card h4 {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem; /* Reduzido de 0.5rem para 0.25rem */
-}
-
-.kpi-card p {
-    color: var(--text-primary);
-    font-size: 1.125rem; /* Reduzido de 1.25rem */
-    font-weight: 600;
-    margin: 0; /* Removida margem extra */
-}
-
 /* Tema claro */
 [data-theme="light"] .filter-group select,
 [data-theme="light"] .filter-group input {

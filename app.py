@@ -966,7 +966,7 @@ def registrar_estoque():
         }), 400
     
 @app.route('/download_estoque/<tipo>', methods=['GET'])
-def download_estoque(tipo): 
+def download_estoque(tipo):
     try:
         # Obter farm_id da sessão
         farm_id = session.get('farm_id')
@@ -977,13 +977,13 @@ def download_estoque(tipo):
         if tipo == 'movimentacoes':
             query = text("""
                 SELECT 
-                    re.data,
-                    p.produto,
-                    re.quantidade,
-                    re.tipo_movimento,
-                    COALESCE(re.valor_unitario, 0) as valor_unitario,
-                    f.nome as funcionario,
-                    COALESCE(l.loja, 'N/A') as loja
+                    DATE_FORMAT(re.data, '%d/%m/%Y') as 'Data',
+                    p.produto as 'Produto',
+                    re.quantidade as 'Quantidade',
+                    re.tipo_movimento as 'Tipo de Movimento',
+                    COALESCE(re.valor_unitario, 0) as 'Valor Unitário (R$)',
+                    f.nome as 'Funcionário',
+                    COALESCE(l.loja, 'N/A') as 'Loja'
                 FROM registro_estoque re
                 JOIN produtos p ON re.produto_id = p.id
                 JOIN funcionarios f ON re.funcionario_id = f.id
@@ -992,21 +992,6 @@ def download_estoque(tipo):
                 ORDER BY re.data DESC
             """)
             df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
-            
-            # Renomear colunas
-            df = df.rename(columns={
-                'data': 'Data',
-                'produto': 'Produto',
-                'quantidade': 'Quantidade',
-                'tipo_movimento': 'Tipo de Movimento',
-                'valor_unitario': 'Valor Unitário (R$)',
-                'funcionario': 'Funcionário',
-                'loja': 'Loja'
-            })
-            
-            # Formatar data
-            df['Data'] = pd.to_datetime(df['Data']).dt.strftime('%d/%m/%Y')
-            
             ws.title = "Movimentações de Estoque"
 
         elif tipo == 'produtos':
@@ -1024,6 +1009,7 @@ def download_estoque(tipo):
             ws.title = "Lista de Produtos"
 
         elif tipo == 'resumo':
+            # Query para estoque total baseado apenas no registro_estoque
             query = text("""
                 WITH UltimaEntrada AS (
                     SELECT 
@@ -1039,79 +1025,90 @@ def download_estoque(tipo):
                 )
                 SELECT 
                     p.produto as 'Produto',
+                    p.tipo as 'Tipo',
+                    p.classificacao as 'Classificação',
                     SUM(CASE 
                         WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade 
                         WHEN re.tipo_movimento = 'SAIDA' THEN -re.quantidade 
                         ELSE 0 
                     END) as 'Saldo Atual',
-                    ue.valor_unitario as 'Valor Unitário (R$)',
-                    ue.loja as 'Última Loja'
+                    COALESCE(ue.valor_unitario, 0) as 'Valor Unitário (R$)',
+                    (SUM(CASE 
+                        WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade 
+                        WHEN re.tipo_movimento = 'SAIDA' THEN -re.quantidade 
+                        ELSE 0 
+                    END) * COALESCE(ue.valor_unitario, 0)) as 'Valor Total (R$)',
+                    COALESCE(ue.loja, 'N/A') as 'Última Loja'
                 FROM produtos p
                 LEFT JOIN registro_estoque re ON p.id = re.produto_id AND re.farm_id = :farm_id
                 LEFT JOIN UltimaEntrada ue ON p.id = ue.produto_id AND ue.rn = 1
                 WHERE p.ativo = 1
                 AND (p.farm_id = :farm_id OR p.farm_id IS NULL)
-                GROUP BY p.id, p.produto, ue.valor_unitario, ue.loja
+                GROUP BY p.id, p.produto, p.tipo, p.classificacao, ue.valor_unitario, ue.loja
+                HAVING SUM(CASE 
+                    WHEN re.tipo_movimento = 'ENTRADA' THEN re.quantidade 
+                    WHEN re.tipo_movimento = 'SAIDA' THEN -re.quantidade 
+                    ELSE 0 
+                END) > 0
                 ORDER BY p.produto
             """)
-            df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
             
-            # Calcular valor total por produto
-            df['Valor Total'] = df['Saldo Atual'] * pd.to_numeric(df['Valor Unitário (R$)'].fillna(0))
-            
-            # Calcular o valor total do estoque
-            valor_total_estoque = df['Valor Total'].sum()
-            
-            # Formatar valores
-            df['Valor Unitário (R$)'] = df['Valor Unitário (R$)'].fillna(0).apply(lambda x: f'R$ {x:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.'))
-            df['Valor Total'] = df['Valor Total'].apply(lambda x: f'R$ {x:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.'))
-            
-            # Adicionar linha do total
-            df.loc[len(df.index)] = ['VALOR TOTAL DO ESTOQUE GALPÃO', '', '', '', f'R$ {valor_total_estoque:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')]
-            
-            ws.title = "Resumo do Estoque Galpão"
-
             df = pd.read_sql(query, db.engine, params={'farm_id': farm_id})
 
-            # Garantir que as colunas numéricas sejam float
+            # Garantir que as colunas numéricas sejam do tipo correto
             df['Saldo Atual'] = pd.to_numeric(df['Saldo Atual'], errors='coerce').fillna(0)
             df['Valor Unitário (R$)'] = pd.to_numeric(df['Valor Unitário (R$)'], errors='coerce').fillna(0)
             df['Valor Total (R$)'] = pd.to_numeric(df['Valor Total (R$)'], errors='coerce').fillna(0)
 
-            def safe_format_currency(value):
+            # Função para formatar moeda brasileira
+            def format_currency(value):
                 try:
-                    # Remover R$, pontos e substituir vírgula por ponto para conversão
-                    numeric_value = float(str(value).replace('R$', '').replace('.', '').replace(',', '.').strip() or 0)
-                    # Dividir por 100 para corrigir a representação de centavos
-                    numeric_value = numeric_value / 100
-                    return f'R$ {numeric_value:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
+                    if pd.isna(value) or value == 0:
+                        return 'R$ 0,00'
+                    return f'R$ {float(value):,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
                 except (ValueError, TypeError):
                     return 'R$ 0,00'
+
+            # Função para formatar números
+            def format_number(value):
+                try:
+                    if pd.isna(value):
+                        return '0,00'
+                    return f'{float(value):,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
+                except (ValueError, TypeError):
+                    return '0,00'
 
             # Calcular o valor total do estoque
             valor_total_estoque = df['Valor Total (R$)'].sum()
 
-            # Adicionar linha com o total geral
-            total_row = pd.DataFrame([['VALOR TOTAL DO ESTOQUE', None, None, None, None, None, valor_total_estoque]], 
-                                    columns=df.columns)
+            # Formatar as colunas antes de adicionar a linha do total
+            df['Saldo Atual'] = df['Saldo Atual'].apply(format_number)
+            df['Valor Unitário (R$)'] = df['Valor Unitário (R$)'].apply(format_currency)
+            df['Valor Total (R$)'] = df['Valor Total (R$)'].apply(format_currency)
+
+            # Adicionar linha com o total geral (com o número correto de colunas)
+            total_row = pd.DataFrame([{
+                'Produto': 'VALOR TOTAL DO ESTOQUE',
+                'Tipo': '',
+                'Classificação': '',
+                'Saldo Atual': '',
+                'Valor Unitário (R$)': '',
+                'Valor Total (R$)': format_currency(valor_total_estoque),
+                'Última Loja': ''
+            }])
+            
             df = pd.concat([df, total_row], ignore_index=True)
+            ws.title = "Resumo do Estoque"
 
-            # Formatar as colunas monetárias e numéricas
-            for i, row in df.iterrows():
-                if pd.notnull(row['Valor Unitário (R$)']):
-                    df.at[i, 'Valor Unitário (R$)'] = safe_format_currency(row['Valor Unitário (R$)'])
-                if pd.notnull(row['Valor Total (R$)']):
-                    df.at[i, 'Valor Total (R$)'] = safe_format_currency(row['Valor Total (R$)'])
-                if pd.notnull(row['Saldo Atual']):
-                    df.at[i, 'Saldo Atual'] = f'{float(row["Saldo Atual"]):,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
+        else:
+            return jsonify({'error': 'Tipo de relatório inválido'}), 400
 
-            ws.title = "Estoque Total"
-
-            # Converter o DataFrame para Excel com tratamento de valores nulos
+        # Converter o DataFrame para Excel
         for r_idx, row in enumerate(dataframe_to_rows(df, index=False), 1):
             for c_idx, value in enumerate(row, 1):
-                cell = ws.cell(row=r_idx, column=c_idx, value=str(value) if pd.notnull(value) else '')
+                cell = ws.cell(row=r_idx, column=c_idx, value=value if pd.notnull(value) else '')
 
+        # Aplicar estilo ao worksheet
         style_excel_worksheet(ws)
 
         # Salvar arquivo
