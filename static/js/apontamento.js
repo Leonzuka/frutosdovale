@@ -745,8 +745,6 @@ alert('Erro ao desativar atividade');
 
 // Funções de utilidade
 function showForm() {
-    const formContainer = document.getElementById('apontamentoForm');
-    formContainer.style.display = 'flex';
     showModal('registroModal');
 }
 
