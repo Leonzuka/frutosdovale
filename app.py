@@ -22,10 +22,6 @@ from urllib.parse import urlparse
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Configuração mais robusta para o banco de dados
-# Arquivo: app.py
-# Alterar aproximadamente nas linhas 25-37:
-
 # Configuração para o banco de dados
 database_url = os.environ.get('DATABASE_URL') or 'mysql://root:CDgpcTOfpvsefoWvuqPyZmrwnBjdfqjz@centerbeam.proxy.rlwy.net:10393/railway'
 
@@ -53,7 +49,7 @@ db = SQLAlchemy(app)
 
 try:
     with app.app_context():
-        db.engine.execute("SELECT 1")
+        db.session.execute(text("SELECT 1"))
     print("Conexão com o banco de dados estabelecida com sucesso!")
 except Exception as e:
     print(f"Erro ao conectar ao banco de dados: {e}")
@@ -1989,6 +1985,63 @@ def get_ultimas_movimentacoes():
         return jsonify({
             'status': 'error',
             'message': f'Erro ao buscar movimentações: {str(e)}'
+        }), 400
+
+# Adicionar movimentação no estoque
+@app.route('/adicionar_movimentacao', methods=['POST'])
+def adicionar_movimentacao():
+    try:
+        farm_id = session.get('farm_id')
+        
+        # Obter dados do formulário
+        produto_id = request.form.get('produto_id')
+        funcionario_id = request.form.get('funcionario_id')
+        loja_id = request.form.get('loja_id')
+        tipo_movimento = request.form.get('tipo_movimento')
+        quantidade = request.form.get('quantidade')
+        valor_unitario = request.form.get('valor_unitario')
+        data = request.form.get('data')
+        
+        # Validar campos obrigatórios
+        if not all([produto_id, funcionario_id, tipo_movimento, quantidade, valor_unitario, data]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Todos os campos obrigatórios devem ser preenchidos.'
+            }), 400
+        
+        # Inserir movimentação
+        query = text("""
+            INSERT INTO registro_estoque (
+                farm_id, produto_id, funcionario_id, loja_id, 
+                tipo_movimento, quantidade, valor_unitario, data
+            ) VALUES (
+                :farm_id, :produto_id, :funcionario_id, :loja_id,
+                :tipo_movimento, :quantidade, :valor_unitario, :data
+            )
+        """)
+        
+        db.session.execute(query, {
+            'farm_id': farm_id,
+            'produto_id': produto_id,
+            'funcionario_id': funcionario_id,
+            'loja_id': loja_id if loja_id else None,
+            'tipo_movimento': tipo_movimento,
+            'quantidade': quantidade,
+            'valor_unitario': valor_unitario,
+            'data': data
+        })
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Movimentação registrada com sucesso!'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Erro ao registrar movimentação: {str(e)}'
         }), 400
 
 #Excluir um registro na lista(5) do estoque

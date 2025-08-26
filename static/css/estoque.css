@@ -493,6 +493,9 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border: none;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .large-modal {
@@ -546,16 +549,31 @@
 }
 
 .modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    width: 100%;
+}
+
+.large-modal .modal-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     padding: 2rem;
     max-height: calc(90vh - 120px);
     overflow-y: auto;
+    align-items: flex-start;
 }
 
 .form-section {
     background: #ffffff;
+    width: 100%;
+    max-width: 500px;
 }
 
 .recent-section {
@@ -680,7 +698,7 @@
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .modal-body {
+    .large-modal .modal-body {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
@@ -984,6 +1002,11 @@
     
     .modal-body {
         padding: 1rem;
+    }
+    
+    .large-modal .modal-body {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     .form-grid {
