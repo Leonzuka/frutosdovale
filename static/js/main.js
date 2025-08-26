@@ -51,6 +51,6 @@ function validarFormulario(formulario) {
 
 // Inicialização global
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Sistema VINES iniciado');
+    console.log('Sistema Frutos do Vale iniciado');
     // Adicionar outras inicializações globais conforme necessário
 });

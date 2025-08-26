@@ -339,7 +339,7 @@ function updateMetrics(metrics) {
             .filter(item => item.maquina !== 'POSTO DE COMBUSTÍVEL')
             .reduce((acc, curr) => acc + curr.consumo, 0) : 0;
     const totalApplications = metrics.totalApplications || 0;
-    const activeEmployees = metrics.activeEmployees || 0;
+    const activeEmployees = metrics.activeEmployees || metrics.active_employees || metrics.totalEmployees || 0;
     
     console.log('Valores a serem exibidos:', {
         totalCosts, totalFuelConsumption, totalApplications, activeEmployees

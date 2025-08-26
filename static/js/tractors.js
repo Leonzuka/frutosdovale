@@ -281,6 +281,10 @@ function initializeTableSelector() {
         tableSelector.addEventListener('change', (e) => {
             switchTable(e.target.value);
         });
+        
+        // Carrega a tabela inicial (abastecimento por padrão)
+        const initialValue = tableSelector.value || 'abastecimento';
+        switchTable(initialValue);
     }
 }
 

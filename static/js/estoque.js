@@ -199,22 +199,32 @@ async function carregarMovimentacoesRecentes() {
                 
                 return `
                     <div class="movement-card ${mov.tipo_movimento.toLowerCase()}">
-                        <div class="movement-icon">
-                            <i class="fas fa-${mov.tipo_movimento === 'ENTRADA' ? 'arrow-down' : 'arrow-up'}"></i>
+                        <button class="movement-delete" onclick="excluirMovimentacao(${mov.id})" title="Excluir movimentação">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <div class="movement-header">
+                            <div class="movement-type ${mov.tipo_movimento.toLowerCase()}">
+                                <i class="fas fa-${mov.tipo_movimento === 'ENTRADA' ? 'arrow-down' : 'arrow-up'}"></i>
+                                ${mov.tipo_movimento}
+                            </div>
+                            <span class="movement-date">${dataFormatada} ${horaFormatada}</span>
                         </div>
-                        <div class="movement-content">
-                            <div class="movement-header">
-                                <span class="movement-type ${mov.tipo_movimento.toLowerCase()}">${mov.tipo_movimento}</span>
-                                <span class="movement-date">${dataFormatada} ${horaFormatada}</span>
+                        <div class="movement-details">
+                            <div class="movement-detail">
+                                <span class="movement-detail-label">Produto</span>
+                                <span class="movement-detail-value">${mov.produto_nome}</span>
                             </div>
-                            <div class="movement-details">
-                                <span class="movement-product">${mov.produto_nome}</span>
-                                <span class="movement-quantity">${mov.quantidade} ${mov.unidade}</span>
-                                ${mov.valor_unitario ? `<span class="movement-value">R$ ${mov.valor_unitario.toFixed(2)}</span>` : ''}
+                            <div class="movement-detail">
+                                <span class="movement-detail-label">Quantidade</span>
+                                <span class="movement-detail-value">${mov.quantidade} ${mov.unidade}</span>
                             </div>
-                            <div class="movement-footer">
-                                <span class="movement-employee">Por: ${mov.funcionario_nome}</span>
+                        </div>
+                        <div class="movement-footer">
+                            <div class="movement-loja">
+                                <i class="fas fa-user"></i>
+                                <span>${mov.funcionario_nome}</span>
                             </div>
+                            ${mov.valor_unitario ? `<span class="movement-value ${mov.tipo_movimento.toLowerCase()}">R$ ${mov.valor_unitario.toFixed(2)}</span>` : ''}
                         </div>
                     </div>
                 `;
