@@ -17,7 +17,7 @@
         }
         
         .farm-card {
-            background: rgba(30, 41, 59, 0.5);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 1rem;
             padding: 2rem;
@@ -32,6 +32,7 @@
             justify-content: center;
             height: 250px;
             position: relative;
+            box-shadow: var(--shadow-light);
         }
         
         .farm-card:hover {
@@ -85,6 +86,23 @@
         [data-theme="light"] .farm-card {
             background: #ffffff;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Tema escuro para elementos específicos da página */
+        [data-theme="dark"] .page-container {
+            background: var(--bg-primary);
+        }
+        
+        [data-theme="dark"] .main-content {
+            background: var(--bg-primary);
+        }
+        
+        [data-theme="dark"] .main-title {
+            color: var(--text-primary);
+        }
+        
+        [data-theme="dark"] .subtitle {
+            color: var(--text-secondary);
         }
 
         /* Tablets e telas médias */

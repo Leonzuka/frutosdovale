@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Verifica se há um tema salvo
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme);
 
     // Adiciona o botão de tema em todas as páginas

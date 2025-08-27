@@ -100,7 +100,7 @@
 }
 
 .stat-card {
-    background: #ffffff;
+    background: var(--bg-card);
     border-radius: 1rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -196,7 +196,7 @@
 }
 
 .action-card {
-    background: #ffffff;
+    background: var(--bg-card);
     border-radius: 1.25rem;
     padding: 2rem;
     position: relative;
@@ -457,7 +457,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     color: #64748b;
@@ -473,7 +473,7 @@
 }
 
 .activity-grid {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-radius: 1rem;
     border: 1px solid #e2e8f0;
     padding: 1.5rem;
@@ -684,7 +684,7 @@
 
 /* ===== MODAIS MODERNOS ===== */
 .modern-modal .modal-content {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-radius: 1.25rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border: none;
@@ -768,7 +768,7 @@
 }
 
 .form-section {
-    background: #ffffff;
+    background: var(--bg-secondary);
     width: 100%;
     max-width: 600px;
     min-width: 0;
@@ -817,7 +817,7 @@
     border-radius: 0.5rem;
     font-size: 0.875rem;
     transition: all 0.3s ease;
-    background: #ffffff;
+    background: var(--bg-secondary);
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
@@ -879,7 +879,7 @@
 }
 
 .btn-secondary {
-    background: #ffffff;
+    background: var(--bg-secondary);
     color: #64748b;
     border: 1px solid #d1d5db;
 }
@@ -907,6 +907,76 @@
     .form-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* === TEMA ESCURO === */
+[data-theme="dark"] body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-container {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .back-button-container {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .header-content h1 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .inventory-card,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .product-item,
+[data-theme="dark"] .inventory-summary {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .product-info h4,
+[data-theme="dark"] .product-details p {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .search-container input {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-buttons button {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-buttons button.active {
+    background: var(--accent-color);
+    color: white;
 }
 
 @media (max-width: 768px) {
@@ -1020,7 +1090,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     margin-bottom: 0.75rem;
@@ -1126,7 +1196,7 @@
 }
 
 .download-option:hover {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-color: var(--estoque-primary);
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(5, 150, 105, 0.2);
@@ -1170,7 +1240,7 @@
 }
 
 .loading-content {
-    background: #ffffff;
+    background: var(--bg-secondary);
     padding: 2rem 3rem;
     border-radius: 0.75rem;
     text-align: center;

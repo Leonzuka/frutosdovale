@@ -1,4 +1,4 @@
-/* === TEMA EMPRESARIAL CLARO === */
+/* === SISTEMA DE TEMAS === */
 :root {
     /* Cores principais empresariais */
     --primary-blue: #1e40af;
@@ -36,9 +36,71 @@
     --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-large: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     
+    /* Variáveis para compatibilidade com outras páginas */
+    --accent-color: var(--secondary-blue);
+    --accent-color-dark: var(--accent-blue);
+    --primary-color: var(--bg-card);
+    
     /* Transições */
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tema escuro */
+[data-theme="dark"] {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border-color: #475569;
+    --shadow-light: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-large: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    
+    /* Variáveis para compatibilidade com outras páginas */
+    --primary-color: var(--bg-card);
+}
+
+/* Aplicação do tema escuro aos elementos principais */
+[data-theme="dark"] body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-container {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .header-content h1,
+[data-theme="dark"] .header-content .subtitle,
+[data-theme="dark"] .page-title h2,
+[data-theme="dark"] .page-subtitle {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .menu-cards .menu-card {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .menu-card:hover {
+    box-shadow: var(--shadow-medium);
+}
+
+[data-theme="dark"] .back-button-container {
+    background: var(--bg-secondary);
 }
 
 /* Reset e base */
@@ -158,7 +220,7 @@ body {
 
 /* === CARDS EMPRESARIAIS === */
 .menu-card {
-    background: var(--white);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 1rem;
     padding: 2rem;
@@ -598,21 +660,21 @@ body {
 
 /* === TEMA ESCURO PARA FOOTER === */
 [data-theme="dark"] .main-footer {
-    background: rgba(30, 41, 59, 0.95) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color) !important;
     backdrop-filter: blur(10px) !important;
 }
 
 [data-theme="dark"] .footer-content p {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: var(--text-secondary) !important;
 }
 
 [data-theme="dark"] .footer-links a {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: var(--text-secondary) !important;
 }
 
 [data-theme="dark"] .footer-links a:hover {
-    color: #3b82f6 !important;
+    color: var(--accent-color) !important;
     background: rgba(59, 130, 246, 0.1) !important;
 }
 
@@ -768,12 +830,12 @@ body {
 /* Estilos específicos para tema escuro */
 [data-theme="dark"] .theme-button {
     background: rgba(59, 130, 246, 0.15);
-    border-color: #475569;
+    border-color: var(--border-color);
 }
 
 [data-theme="dark"] .theme-button:hover {
     background: rgba(59, 130, 246, 0.25);
-    border-color: #60a5fa;
+    border-color: var(--accent-color);
 }
 
 [data-theme="dark"] .theme-button .light-icon {

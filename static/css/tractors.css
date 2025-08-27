@@ -48,15 +48,15 @@
 }
 
 .action-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 2px solid #e2e8f0;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
     border-radius: 1rem;
     padding: 2rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-light);
 }
 
 .action-card::before {
@@ -157,8 +157,8 @@
 /* Estilo da seção de tabela melhorado */
 .table-section {
     margin-top: 3rem;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 2px solid #e2e8f0;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
     border-radius: 1rem;
     padding: 2rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -174,8 +174,8 @@
 }
 
 .table-type-selector {
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
     border: 2px solid #e2e8f0;
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
@@ -194,7 +194,7 @@
     overflow-x: auto;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    background: #ffffff;
+    background: var(--bg-secondary);
 }
 
 .table-container table {
@@ -247,7 +247,7 @@
 }
 
 .form-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: var(--bg-card);
     padding: 2.5rem;
     border-radius: 1.5rem;
     width: 100%;
@@ -285,7 +285,7 @@
 .form-group select {
     width: 100%;
     padding: 0.875rem 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 2px solid #e2e8f0;
     border-radius: 0.5rem;
     color: #1e293b;
@@ -376,6 +376,70 @@
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     padding: 1rem 0;
     z-index: 1;
+}
+
+/* === TEMA ESCURO === */
+[data-theme="dark"] body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-container {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .back-button-container {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .header-content h1 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tractor-card,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .maintenance-item,
+[data-theme="dark"] .fuel-record {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tractor-info h3,
+[data-theme="dark"] .tractor-details p {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tabs-container .tab-button {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tabs-container .tab-button.active {
+    background: var(--accent-color);
+    color: white;
 }
 
 /* Responsividade melhorada */
@@ -575,7 +639,7 @@ select:focus {
 }
 
 .download-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: var(--bg-card);
     border: 2px solid #e2e8f0;
     border-radius: 1rem;
     padding: 2rem;

@@ -99,7 +99,7 @@
 }
 
 .action-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: var(--bg-card);
     border: 2px solid #e2e8f0;
     border-radius: 1rem;
     padding: 1.5rem; /* Reduzido de 2rem para 1.5rem */
@@ -256,7 +256,7 @@
 .form-group textarea {
     width: 100%;
     padding: 0.875rem 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 2px solid #e2e8f0;
     border-radius: 0.5rem;
     color: #1e293b;
@@ -386,7 +386,7 @@
     overflow-y: auto;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    background: #ffffff;
+    background: var(--bg-secondary);
 }
 
 /* Header da tabela de registros */
@@ -413,7 +413,7 @@
     display: grid;
     grid-template-columns: 0.8fr 1.2fr 1fr 0.6fr 0.6fr 0.6fr 0.6fr 0.4fr;
     gap: 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-bottom: 1px solid #f1f5f9;
     padding: 1rem;
     align-items: center;
@@ -569,7 +569,7 @@
 .search-input {
     width: 100%;
     padding: 0.875rem 1rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 2px solid #e2e8f0;
     border-radius: 0.75rem;
     color: #1e293b;
@@ -594,7 +594,7 @@
     overflow-y: auto;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    background: #ffffff;
+    background: var(--bg-secondary);
 }
 
 .atividade-item {
@@ -602,7 +602,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-bottom: 1px solid #f1f5f9;
     transition: all 0.3s ease;
 }
@@ -720,6 +720,70 @@
     }
 }
 
+/* === TEMA ESCURO === */
+[data-theme="dark"] body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-container {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .main-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .back-button-container {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .header-content h1 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .record-card,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .appointments-list,
+[data-theme="dark"] .appointment-item {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .appointment-header h4,
+[data-theme="dark"] .appointment-details p {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .appointment-actions .btn-secondary {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .appointment-actions .btn-secondary:hover {
+    background: var(--bg-primary);
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
     .back-button-container {
         padding: 1.5rem 1rem;
@@ -797,7 +861,7 @@
 [data-theme="light"] .form-group input,
 [data-theme="light"] .form-group select,
 [data-theme="light"] .form-group textarea {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 2px solid #e2e8f0;
     color: #1e293b;
 }
@@ -811,7 +875,7 @@
 }
 
 [data-theme="light"] .registro-item {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -829,7 +893,7 @@
 }
 
 [data-theme="light"] .atividade-item {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -859,7 +923,7 @@
 }
 
 [data-theme="light"] .search-input {
-    background: #ffffff;
+    background: var(--bg-secondary);
     border: 2px solid #e2e8f0;
     color: #1e293b;
 }
