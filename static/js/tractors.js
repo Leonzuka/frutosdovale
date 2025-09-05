@@ -708,3 +708,167 @@ document.getElementById('tipoTrator').addEventListener('change', function(e) {
         horimetroInput.setAttribute('required', '');
     }
 });
+
+// === FUNÇÕES DO MODAL DE SUPORTE === 
+function mostrarEmailSuporte() {
+    const modal = document.getElementById('supportModal');
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    
+    // Adicionar classe para animação
+    setTimeout(() => {
+        modal.querySelector('.support-modal').style.transform = 'scale(1)';
+        modal.querySelector('.support-modal').style.opacity = '1';
+    }, 10);
+    
+    // Fechar modal ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            fecharSuporte();
+        }
+    });
+}
+
+function fecharSuporte() {
+    const modal = document.getElementById('supportModal');
+    const modalContent = modal.querySelector('.support-modal');
+    
+    modalContent.style.transform = 'scale(0.9)';
+    modalContent.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+
+function copiarEmail() {
+    const email = 'suporte@frutosdovale.com.br';
+    
+    // Tentar usar a API moderna primeiro
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(email).then(() => {
+            mostrarNotificacao('E-mail copiado!', 'success');
+        }).catch(() => {
+            copiarTextoFallback(email);
+        });
+    } else {
+        copiarTextoFallback(email);
+    }
+}
+
+function copiarTextoFallback(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        mostrarNotificacao('E-mail copiado!', 'success');
+    } catch (err) {
+        mostrarNotificacao('Erro ao copiar. Tente manualmente.', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function abrirWhatsApp() {
+    const numero = '5511999999999'; // Formato internacional
+    const mensagem = 'Olá! Preciso de suporte com o Sistema Frutos do Vale.';
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+    
+    window.open(url, '_blank');
+    mostrarNotificacao('Abrindo WhatsApp...', 'info');
+}
+
+function ligarTelefone() {
+    const numero = 'tel:+551133334444';
+    window.location.href = numero;
+    mostrarNotificacao('Iniciando ligação...', 'info');
+}
+
+function mostrarNotificacao(mensagem, tipo) {
+    // Criar elemento de notificação
+    const notification = document.createElement('div');
+    notification.className = `notification ${tipo}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${
+                tipo === 'success' ? 'fa-check-circle' :
+                tipo === 'error' ? 'fa-exclamation-circle' :
+                'fa-info-circle'
+            }"></i>
+            <span>${mensagem}</span>
+        </div>
+    `;
+    
+    // Estilos da notificação
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 1rem 1.5rem;
+        border-radius: 0.75rem;
+        color: white;
+        font-weight: 600;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        min-width: 200px;
+    `;
+    
+    // Cores por tipo
+    if (tipo === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    } else if (tipo === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remover após 3 segundos
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Inicializar estilos do modal
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('supportModal');
+    if (modal) {
+        const modalContent = modal.querySelector('.support-modal');
+        if (modalContent) {
+            modalContent.style.cssText += `
+                transform: scale(0.9);
+                opacity: 0;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            `;
+        }
+        
+        modal.style.cssText += `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        `;
+    }
+});

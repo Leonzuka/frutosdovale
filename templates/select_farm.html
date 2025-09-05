@@ -348,7 +348,7 @@
                     </div>
                 </div>
                 <div class="header-center">
-                    <h1>Sistema De Gestão Frutos Do Vale</h1>
+                    <h1>Sistema Frutos Do Vale</h1>
                 </div>
                 <div class="header-right">
                     <div class="date-display">
@@ -417,9 +417,11 @@
             const dateDisplay = document.getElementById('current-date');
             const yearDisplay = document.getElementById('current-year');
             
-            const currentDate = new Date();
-            dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
-            yearDisplay.textContent = currentDate.getFullYear();
+            if (dateDisplay && yearDisplay) {
+                const currentDate = new Date();
+                dateDisplay.textContent = currentDate.toLocaleDateString('pt-BR');
+                yearDisplay.textContent = currentDate.getFullYear();
+            }
         });
     </script>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>

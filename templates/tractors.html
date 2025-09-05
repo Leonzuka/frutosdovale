@@ -199,6 +199,71 @@
         </div>
     </main>
 
+    <!-- Modal de Suporte -->
+    <div id="supportModal" class="modal" style="display: none;">
+        <div class="modal-content support-modal">
+            <div class="modal-header">
+                <div class="support-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h3>Central de Suporte</h3>
+                <button class="close-modal" onclick="fecharSuporte()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="support-content">
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>E-mail</h4>
+                                <p>suporte@frutosdovale.com.br</p>
+                                <button class="btn-copy" onclick="copiarEmail()">
+                                    <i class="fas fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>WhatsApp</h4>
+                                <p>(11) 99999-9999</p>
+                                <button class="btn-whatsapp" onclick="abrirWhatsApp()">
+                                    <i class="fab fa-whatsapp"></i> Abrir
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Telefone</h4>
+                                <p>(11) 3333-4444</p>
+                                <button class="btn-call" onclick="ligarTelefone()">
+                                    <i class="fas fa-phone"></i> Ligar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="support-hours">
+                        <h4><i class="fas fa-clock"></i> Horário de Atendimento</h4>
+                        <p><strong>Segunda a Sexta:</strong> 8h às 18h</p>
+                        <p><strong>Sábado:</strong> 8h às 12h</p>
+                        <p><strong>Domingo:</strong> Fechado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
      <!-- Footer -->
      <footer class="main-footer">
